@@ -44,7 +44,7 @@ export default function DashboardPage() {
                         Welcome to your dashboard! 🎉
                     </h2>
                     <p className="text-xl text-slate-600 mb-8">
-                        Authentication is working perfectly. Let's build some features!
+                        Authentication is working perfectly. Let&apos;s build some features!
                     </p>
 
                     <div className="bg-white rounded-2xl shadow-xl border border-slate-200/50 p-8 max-w-md mx-auto">
