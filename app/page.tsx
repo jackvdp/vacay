@@ -3,8 +3,35 @@
 import { Button } from "@/components/ui/button"
 import { Camera, Upload, Share2, ArrowRight, Smartphone } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function LandingPage() {
+  const { user, loading, signInWithGoogle } = useAuth()
+  const router = useRouter()
+
+  // Redirect to dashboard if already signed in
+  useEffect(() => {
+    if (user && !loading) {
+      router.push('/dashboard')
+    }
+  }, [user, loading, router])
+
+  // Show loading state
+  if (loading) {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center mb-4 mx-auto animate-pulse">
+              <Camera className="h-5 w-5 text-white" />
+            </div>
+            <p className="text-slate-600">Loading...</p>
+          </div>
+        </div>
+    )
+  }
+
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
         {/* Navigation */}
@@ -36,7 +63,10 @@ export default function LandingPage() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
               >
-                <Button className="relative bg-gradient-to-r from-teal-600 to-cyan-600 text-white overflow-hidden group">
+                <Button
+                    onClick={signInWithGoogle}
+                    className="relative bg-gradient-to-r from-teal-600 to-cyan-600 text-white overflow-hidden group"
+                >
                   <span className="relative z-10">Sign In</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-teal-700 to-cyan-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 </Button>
@@ -55,7 +85,7 @@ export default function LandingPage() {
                 className="mb-8"
             >
               <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-slate-900 mb-6 leading-[0.9]">
-                Share Memories
+                Share Travel
                 <br />
                 <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
                 Instantly
@@ -81,6 +111,7 @@ export default function LandingPage() {
                 className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
             >
               <Button
+                  onClick={signInWithGoogle}
                   size="lg"
                   className="relative bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-8 py-6 text-lg shadow-lg overflow-hidden group"
               >
@@ -252,6 +283,7 @@ export default function LandingPage() {
                 whileTap={{ scale: 0.98 }}
             >
               <Button
+                  onClick={signInWithGoogle}
                   size="lg"
                   className="relative bg-white text-teal-600 px-8 py-6 text-lg shadow-xl font-semibold overflow-hidden group"
               >
