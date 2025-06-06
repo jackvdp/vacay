@@ -4,9 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add auth">
-      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/auth/sign-in-modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/auth/sign-in-modal.tsx" afterDir="false" />
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Remove apsos character">
+      <change afterPath="$PROJECT_DIR$/components/albums/create-album-modal.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/albums.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/types/album.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,6 +34,9 @@
     "accountId": "6cb89bf6-bafc-45f4-95af-545513498139"
   }
 }]]></component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 1
 }]]></component>
@@ -72,7 +81,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="8833000" />
+      <workItem from="1749114800260" duration="10196000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -90,7 +99,31 @@
       <option name="project" value="LOCAL" />
       <updated>1749197588435</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Fix potential build errors">
+      <option name="closed" value="true" />
+      <created>1749197957395</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1749197957395</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Extract navbar component">
+      <option name="closed" value="true" />
+      <created>1749198674464</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1749198674464</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Remove apsos character">
+      <option name="closed" value="true" />
+      <created>1749198834247</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1749198834247</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -99,6 +132,9 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add initial home screen and set up" />
     <MESSAGE value="Add auth" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add auth" />
+    <MESSAGE value="Fix potential build errors" />
+    <MESSAGE value="Extract navbar component" />
+    <MESSAGE value="Remove apsos character" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove apsos character" />
   </component>
 </project>
