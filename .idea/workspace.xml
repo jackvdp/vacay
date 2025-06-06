@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add new components">
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Fixed error">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/albums/create-album-modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/albums/create-album-modal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eslint.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/albums.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/albums.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +74,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="11180000" />
+      <workItem from="1749114800260" duration="12593000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -135,7 +132,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749199482636</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Fixed error">
+      <option name="closed" value="true" />
+      <created>1749200457509</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1749200457509</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -149,6 +154,7 @@
     <MESSAGE value="Remove apsos character" />
     <MESSAGE value="Add ability to get albums" />
     <MESSAGE value="Add new components" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add new components" />
+    <MESSAGE value="Fixed error" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed error" />
   </component>
 </project>

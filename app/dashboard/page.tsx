@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Camera, Plus } from "lucide-react"
-import Navbar from "@/components/navbar";
+import Navbar from "@/components/navbar"
 import { CreateAlbumModal } from "@/components/albums/create-album-modal"
 import { getUserAlbums } from "@/lib/albums"
 import type { Album } from "@/types/album"
@@ -118,10 +118,14 @@ export default function DashboardPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {albums.map((album) => (
-                            <div key={album.id} className="bg-white rounded-xl shadow-lg border border-slate-200/50 overflow-hidden hover:shadow-xl transition-shadow cursor-pointer">
+                            <div
+                                key={album.id}
+                                onClick={() => router.push(`/albums/${album.id}`)}
+                                className="bg-white rounded-xl shadow-lg border border-slate-200/50 overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group"
+                            >
                                 <div className="p-6">
                                     <div className="flex items-start justify-between mb-4">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
                                             <Camera className="h-6 w-6 text-white" />
                                         </div>
                                         {album.is_public && (
@@ -130,13 +134,19 @@ export default function DashboardPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2">{album.title}</h3>
+                                    <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">{album.title}</h3>
                                     {album.description && (
                                         <p className="text-slate-600 text-sm mb-4 line-clamp-2">{album.description}</p>
                                     )}
-                                    <p className="text-xs text-slate-500">
-                                        Created {new Date(album.created_at).toLocaleDateString()}
-                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs text-slate-500">
+                                            Created {new Date(album.created_at).toLocaleDateString()}
+                                        </p>
+                                        <div className="flex items-center space-x-1 text-xs text-slate-500">
+                                            <Camera className="h-3 w-3" />
+                                            <span>0 photos</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ))}
