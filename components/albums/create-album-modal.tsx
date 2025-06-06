@@ -34,6 +34,8 @@ export function CreateAlbumModal({ open, onOpenChange, onAlbumCreated }: CreateA
         setIsLoading(true)
 
         try {
+            console.log('Submitting album creation...')
+
             const { album, error } = await createAlbum({
                 title: title.trim(),
                 description: description.trim() || undefined,
@@ -42,11 +44,12 @@ export function CreateAlbumModal({ open, onOpenChange, onAlbumCreated }: CreateA
 
             if (error) {
                 console.error("Error creating album:", error)
-                toast.error("Failed to create album. Please try again.")
+                toast.error(`Failed to create album: ${error.message || 'Please try again.'}`)
                 return
             }
 
             if (album) {
+                console.log('Album created successfully:', album)
                 toast.success("Album created successfully! 🎉")
 
                 // Reset form
@@ -60,9 +63,9 @@ export function CreateAlbumModal({ open, onOpenChange, onAlbumCreated }: CreateA
                 // Notify parent component
                 onAlbumCreated?.()
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating album:", error)
-            toast.error("Something went wrong. Please try again.")
+            toast.error(`Something went wrong: ${error.message || 'Please try again.'}`)
         } finally {
             setIsLoading(false)
         }
