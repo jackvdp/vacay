@@ -4,10 +4,11 @@ import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Camera, LogOut } from "lucide-react"
+import { Camera } from "lucide-react"
+import Navbar from "@/components/navbar"
 
 export default function DashboardPage() {
-    const { user, loading, signOut } = useAuth()
+    const { user, loading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
@@ -34,42 +35,7 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
             {/* Header */}
-            <header className="bg-white/70 backdrop-blur-xl border-b border-slate-200/20">
-                <div className="max-w-6xl mx-auto px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                                <Camera className="h-5 w-5 text-white" />
-                            </div>
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                                Vacay
-                            </h1>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-3">
-                                <img
-                                    src={user.user_metadata?.avatar_url}
-                                    alt={user.user_metadata?.full_name}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                                <span className="text-slate-700 font-medium">
-                  {user.user_metadata?.full_name}
-                </span>
-                            </div>
-                            <Button
-                                onClick={signOut}
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-200"
-                            >
-                                <LogOut className="h-4 w-4 mr-2" />
-                                Sign Out
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Navbar />
 
             {/* Main Content */}
             <main className="max-w-6xl mx-auto px-6 lg:px-8 py-12">

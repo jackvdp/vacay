@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
+import Navbar from "@/components/navbar"
 
 export default function LandingPage() {
   const { user, loading, signInWithGoogle } = useAuth()
@@ -35,45 +36,7 @@ export default function LandingPage() {
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
         {/* Navigation */}
-        <motion.nav
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/20"
-        >
-          <div className="max-w-6xl mx-auto px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <motion.div
-                  className="flex items-center space-x-3"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-              >
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                    <Camera className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                  Vacay
-                </h1>
-              </motion.div>
-
-              <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-              >
-                <Button
-                    onClick={signInWithGoogle}
-                    className="relative bg-gradient-to-r from-teal-600 to-cyan-600 text-white overflow-hidden group"
-                >
-                  <span className="relative z-10">Sign In</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-teal-700 to-cyan-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                </Button>
-              </motion.div>
-            </div>
-          </div>
-        </motion.nav>
+        <Navbar fixed />
 
         {/* Hero Section */}
         <section className="pt-32 pb-24 px-6 lg:px-8">
