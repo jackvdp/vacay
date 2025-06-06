@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Camera, Mail } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { motion, AnimatePresence } from "framer-motion"
 
 interface SignInModalProps {
     open: boolean
