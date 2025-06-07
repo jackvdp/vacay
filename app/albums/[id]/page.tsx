@@ -10,6 +10,7 @@ import { getAlbumMedia } from "@/lib/media"
 import { useAuth } from "@/lib/auth-context"
 import type { Album, Media } from "@/types/album"
 import { PhotoUpload } from "@/components/albums/photo-upload"
+import { EditableAlbumTitle } from "@/components/albums/editable-album-title"
 import { toast } from "sonner"
 
 export default function AlbumPage() {
@@ -74,6 +75,10 @@ export default function AlbumPage() {
         setShowUpload(false) // Hide upload component
     }
 
+    const handleAlbumUpdate = (updatedAlbum: Album) => {
+        setAlbum(updatedAlbum)
+    }
+
     const handleShare = async () => {
         if (!album) return
 
@@ -93,6 +98,8 @@ export default function AlbumPage() {
             toast.success("Share link copied to clipboard! 📋")
         }
     }
+
+    const isCreator = album && user && album.creator_id === user.id
 
     if (authLoading || loading) {
         return (
@@ -163,22 +170,34 @@ export default function AlbumPage() {
                                         <Camera className="h-6 w-6 text-white" />
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-bold text-slate-900">{album.title}</h1>
+                                        {isCreator ? (
+                                            <EditableAlbumTitle
+                                                album={album}
+                                                onUpdate={handleAlbumUpdate}
+                                            />
+                                        ) : (
+                                            <h1 className="text-2xl font-bold text-slate-900">{album.title}</h1>
+                                        )}
                                         <div className="flex items-center space-x-4 text-sm text-slate-600">
-                      <span className="flex items-center">
-                        {album.is_public ? (
-                            <>
-                                <Globe className="h-4 w-4 mr-1" />
-                                Public
-                            </>
-                        ) : (
-                            <>
-                                <Lock className="h-4 w-4 mr-1" />
-                                Private
-                            </>
-                        )}
-                      </span>
+                                            <span className="flex items-center">
+                                                {album.is_public ? (
+                                                    <>
+                                                        <Globe className="h-4 w-4 mr-1" />
+                                                        Public
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Lock className="h-4 w-4 mr-1" />
+                                                        Private
+                                                    </>
+                                                )}
+                                            </span>
                                             <span>Created {new Date(album.created_at).toLocaleDateString()}</span>
+                                            {isCreator && (
+                                                <span className="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full">
+                                                    Owner
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -201,8 +220,9 @@ export default function AlbumPage() {
                                 Share
                             </Button>
 
-                            <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-                                    onClick={() => setShowUpload(true)}
+                            <Button
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                                onClick={() => setShowUpload(true)}
                             >
                                 <Upload className="h-4 w-4 mr-2" />
                                 Upload Photos

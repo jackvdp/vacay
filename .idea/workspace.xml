@@ -4,15 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add album details page">
-      <change afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/upload/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/albums/photo-upload.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/media.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/supabase-service.ts" afterDir="false" />
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add ability to upload photos">
+      <change afterPath="$PROJECT_DIR$/components/albums/editable-album-title.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/albums/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/albums/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/albums.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/albums.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +77,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="15949000" />
+      <workItem from="1749114800260" duration="16718000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -155,7 +151,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749222849586</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Add ability to upload photos">
+      <option name="closed" value="true" />
+      <created>1749306151896</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1749306151896</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -171,6 +175,7 @@
     <MESSAGE value="Add new components" />
     <MESSAGE value="Fixed error" />
     <MESSAGE value="Add album details page" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add album details page" />
+    <MESSAGE value="Add ability to upload photos" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add ability to upload photos" />
   </component>
 </project>

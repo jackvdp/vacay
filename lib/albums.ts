@@ -83,3 +83,43 @@ export async function getAlbumByShareId(shareId: string): Promise<{ album: Album
         return { album: null, error }
     }
 }
+
+export interface UpdateAlbumData {
+    title?: string
+    description?: string
+    is_public?: boolean
+}
+
+export async function updateAlbum(albumId: string, data: UpdateAlbumData): Promise<{ album: Album | null; error: any }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return { album: null, error: 'User not authenticated' }
+        }
+
+        console.log('Updating album:', albumId, 'with data:', data)
+
+        const { data: album, error } = await supabase
+            .from('albums')
+            .update({
+                ...data,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', albumId)
+            .eq('creator_id', user.id) // Only allow creator to update
+            .select()
+            .single()
+
+        if (error) {
+            console.error('Error updating album:', error)
+            return { album: null, error }
+        }
+
+        console.log('Album updated successfully:', album)
+        return { album, error: null }
+    } catch (error) {
+        console.error('Error updating album:', error)
+        return { album: null, error }
+    }
+}
