@@ -4,10 +4,12 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock } from "lucide-react"
-import Navbar from "@/components/navbar";
+import Navbar from "@/components/navbar"
 import { getAlbumById } from "@/lib/albums"
+import { getAlbumMedia } from "@/lib/media"
 import { useAuth } from "@/lib/auth-context"
-import type { Album } from "@/types/album"
+import type { Album, Media } from "@/types/album"
+import { PhotoUpload } from "@/components/albums/photo-upload"
 import { toast } from "sonner"
 
 export default function AlbumPage() {
@@ -15,8 +17,10 @@ export default function AlbumPage() {
     const router = useRouter()
     const { user, loading: authLoading } = useAuth()
     const [album, setAlbum] = useState<Album | null>(null)
+    const [media, setMedia] = useState<Media[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [showUpload, setShowUpload] = useState(false)
 
     const albumId = params.id as string
 
@@ -27,31 +31,35 @@ export default function AlbumPage() {
         }
 
         if (user && albumId) {
-            loadAlbum()
+            loadAlbumData()
         }
     }, [user, authLoading, albumId])
 
-    const loadAlbum = async () => {
+    const loadAlbumData = async () => {
         setLoading(true)
         setError(null)
 
         try {
-            const { album: albumData, error: albumError } = await getAlbumById(albumId)
+            const [albumResult, mediaResult] = await Promise.all([
+                getAlbumById(albumId),
+                getAlbumMedia(albumId)
+            ])
 
-            if (albumError) {
-                console.error("Error loading album:", albumError)
+            if (albumResult.error) {
+                console.error("Error loading album:", albumResult.error)
                 setError("Failed to load album")
                 toast.error("Failed to load album")
                 return
             }
 
-            if (!albumData) {
+            if (!albumResult.album) {
                 setError("Album not found")
                 toast.error("Album not found")
                 return
             }
 
-            setAlbum(albumData)
+            setAlbum(albumResult.album)
+            setMedia(mediaResult.media || [])
         } catch (err) {
             console.error("Error loading album:", err)
             setError("Something went wrong")
@@ -59,6 +67,11 @@ export default function AlbumPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleUploadComplete = () => {
+        loadAlbumData() // Refresh album data
+        setShowUpload(false) // Hide upload component
     }
 
     const handleShare = async () => {
@@ -188,7 +201,9 @@ export default function AlbumPage() {
                                 Share
                             </Button>
 
-                            <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700">
+                            <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                                    onClick={() => setShowUpload(true)}
+                            >
                                 <Upload className="h-4 w-4 mr-2" />
                                 Upload Photos
                             </Button>
@@ -208,7 +223,7 @@ export default function AlbumPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-slate-600">Total Photos</p>
-                                <p className="text-2xl font-bold text-slate-900">0</p>
+                                <p className="text-2xl font-bold text-slate-900">{media.length}</p>
                             </div>
                         </div>
                     </div>
@@ -240,22 +255,76 @@ export default function AlbumPage() {
                     </div>
                 </div>
 
-                {/* Photos Grid - Empty State */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-12">
-                    <div className="text-center max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Camera className="h-8 w-8 text-white" />
+                {/* Photos Grid */}
+                {showUpload ? (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-slate-900">Upload Photos</h3>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowUpload(false)}
+                            >
+                                Cancel
+                            </Button>
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">No photos yet</h3>
-                        <p className="text-slate-600 mb-6">
-                            Start uploading photos to bring this album to life! You can drag and drop multiple photos at once.
-                        </p>
-                        <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700">
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload Your First Photos
-                        </Button>
+                        <PhotoUpload albumId={albumId} onUploadComplete={handleUploadComplete} />
                     </div>
-                </div>
+                ) : media.length > 0 ? (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-slate-900">Photos ({media.length})</h3>
+                            <Button
+                                onClick={() => setShowUpload(true)}
+                                size="sm"
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Add More
+                            </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {media.map((item) => (
+                                <div key={item.id} className="aspect-square bg-slate-100 rounded-lg overflow-hidden group cursor-pointer">
+                                    {item.mime_type.startsWith('image/') ? (
+                                        <img
+                                            src={item.blob_url}
+                                            alt={item.original_name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                                            <div className="text-center">
+                                                <video className="w-8 h-8 mx-auto mb-2 text-slate-500" />
+                                                <p className="text-xs text-slate-500">Video</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-12">
+                        <div className="text-center max-w-md mx-auto">
+                            <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                <Camera className="h-8 w-8 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">No photos yet</h3>
+                            <p className="text-slate-600 mb-6">
+                                Start uploading photos to bring this album to life! You can drag and drop multiple photos at once.
+                            </p>
+                            <Button
+                                onClick={() => setShowUpload(true)}
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload Your First Photos
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     )
