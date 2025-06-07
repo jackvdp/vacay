@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabase"
 import type { Album, Media } from "@/types/album"
 import { PhotoUpload } from "@/components/albums/photo-upload"
 import { EditableAlbumTitle } from "@/components/albums/editable-album-title"
-import { SimpleMemberModal as MemberManagementModal } from "@/components/albums/member-management-modal"
+import { SimpleMemberModal} from "@/components/albums/member-management-modal";
 import { toast } from "sonner"
 
 export default function AlbumPage() {
@@ -25,7 +25,7 @@ export default function AlbumPage() {
     const [error, setError] = useState<string | null>(null)
     const [showUpload, setShowUpload] = useState(false)
     const [showMemberModal, setShowMemberModal] = useState(false)
-    const [memberCount, setMemberCount] = useState(1)
+    const [collaboratorCount, setCollaboratorCount] = useState(0)
 
     const albumId = params.id as string
 
@@ -37,7 +37,7 @@ export default function AlbumPage() {
 
         if (user && albumId) {
             loadAlbumData()
-            loadMemberCount()
+            loadCollaboratorCount()
         }
     }, [user, authLoading, albumId])
 
@@ -75,7 +75,7 @@ export default function AlbumPage() {
         }
     }
 
-    const loadMemberCount = async () => {
+    const loadCollaboratorCount = async () => {
         try {
             // Get the current session token
             const { data: { session } } = await supabase.auth.getSession()
@@ -91,11 +91,12 @@ export default function AlbumPage() {
             })
             if (response.ok) {
                 const result = await response.json()
-                const activeMembers = result.members?.filter((m: any) => m.status === 'active') || []
-                setMemberCount(activeMembers.length)
+                // Count all collaborators (including creator)
+                const totalCollaborators = result.members?.length || 0
+                setCollaboratorCount(totalCollaborators)
             }
         } catch (error) {
-            console.error("Error loading member count:", error)
+            console.error("Error loading collaborator count:", error)
         }
     }
 
@@ -108,8 +109,8 @@ export default function AlbumPage() {
         setAlbum(updatedAlbum)
     }
 
-    const handleMemberUpdate = () => {
-        loadMemberCount() // Refresh member count when members change
+    const handleCollaboratorUpdate = () => {
+        loadCollaboratorCount() // Refresh collaborator count when collaborators change
     }
 
     const handleShare = async () => {
@@ -244,17 +245,17 @@ export default function AlbumPage() {
                         </div>
 
                         <div className="flex items-center space-x-3">
-                            {/* Members Button */}
+                            {/* Collaborators Button */}
                             <Button
                                 onClick={() => setShowMemberModal(true)}
                                 variant="outline"
                                 className="border-slate-200 text-slate-600 hover:bg-slate-50"
                             >
                                 <Users className="h-4 w-4 mr-2" />
-                                {memberCount} Member{memberCount !== 1 ? 's' : ''}
+                                {collaboratorCount} Collaborator{collaboratorCount !== 1 ? 's' : ''}
                             </Button>
 
-                            {/* Invite Members Button - Only for creators */}
+                            {/* Add Collaborator Button - Only for creators */}
                             {isCreator && (
                                 <Button
                                     onClick={() => setShowMemberModal(true)}
@@ -262,7 +263,7 @@ export default function AlbumPage() {
                                     className="border-teal-200 text-teal-600 hover:bg-teal-50"
                                 >
                                     <UserPlus className="h-4 w-4 mr-2" />
-                                    Invite
+                                    Add Collaborator
                                 </Button>
                             )}
 
@@ -312,8 +313,8 @@ export default function AlbumPage() {
                                 <Users className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-slate-600">Contributors</p>
-                                <p className="text-2xl font-bold text-slate-900">{memberCount}</p>
+                                <p className="text-sm text-slate-600">Collaborators</p>
+                                <p className="text-2xl font-bold text-slate-900">{collaboratorCount}</p>
                             </div>
                         </div>
                     </div>
@@ -406,12 +407,12 @@ export default function AlbumPage() {
             </main>
 
             {/* Member Management Modal */}
-            <MemberManagementModal
+            <SimpleMemberModal
                 open={showMemberModal}
                 onOpenChange={setShowMemberModal}
                 albumId={albumId}
                 isCreator={isCreator || false}
-                onMemberUpdate={handleMemberUpdate}
+                onMemberUpdate={handleCollaboratorUpdate}
             />
         </div>
     )
