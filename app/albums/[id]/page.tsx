@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock } from "lucide-react"
+import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock, UserPlus } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { getAlbumById } from "@/lib/albums"
 import { getAlbumMedia } from "@/lib/media"
 import { useAuth } from "@/lib/auth-context"
+import { supabase } from "@/lib/supabase"
 import type { Album, Media } from "@/types/album"
 import { PhotoUpload } from "@/components/albums/photo-upload"
 import { EditableAlbumTitle } from "@/components/albums/editable-album-title"
+import { SimpleMemberModal as MemberManagementModal } from "@/components/albums/member-management-modal"
 import { toast } from "sonner"
 
 export default function AlbumPage() {
@@ -22,6 +24,8 @@ export default function AlbumPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [showUpload, setShowUpload] = useState(false)
+    const [showMemberModal, setShowMemberModal] = useState(false)
+    const [memberCount, setMemberCount] = useState(1)
 
     const albumId = params.id as string
 
@@ -33,6 +37,7 @@ export default function AlbumPage() {
 
         if (user && albumId) {
             loadAlbumData()
+            loadMemberCount()
         }
     }, [user, authLoading, albumId])
 
@@ -70,6 +75,30 @@ export default function AlbumPage() {
         }
     }
 
+    const loadMemberCount = async () => {
+        try {
+            // Get the current session token
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session?.access_token) {
+                return
+            }
+
+            const response = await fetch(`/api/albums/${albumId}/members`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            })
+            if (response.ok) {
+                const result = await response.json()
+                const activeMembers = result.members?.filter((m: any) => m.status === 'active') || []
+                setMemberCount(activeMembers.length)
+            }
+        } catch (error) {
+            console.error("Error loading member count:", error)
+        }
+    }
+
     const handleUploadComplete = () => {
         loadAlbumData() // Refresh album data
         setShowUpload(false) // Hide upload component
@@ -77,6 +106,10 @@ export default function AlbumPage() {
 
     const handleAlbumUpdate = (updatedAlbum: Album) => {
         setAlbum(updatedAlbum)
+    }
+
+    const handleMemberUpdate = () => {
+        loadMemberCount() // Refresh member count when members change
     }
 
     const handleShare = async () => {
@@ -211,6 +244,28 @@ export default function AlbumPage() {
                         </div>
 
                         <div className="flex items-center space-x-3">
+                            {/* Members Button */}
+                            <Button
+                                onClick={() => setShowMemberModal(true)}
+                                variant="outline"
+                                className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                                <Users className="h-4 w-4 mr-2" />
+                                {memberCount} Member{memberCount !== 1 ? 's' : ''}
+                            </Button>
+
+                            {/* Invite Members Button - Only for creators */}
+                            {isCreator && (
+                                <Button
+                                    onClick={() => setShowMemberModal(true)}
+                                    variant="outline"
+                                    className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                                >
+                                    <UserPlus className="h-4 w-4 mr-2" />
+                                    Invite
+                                </Button>
+                            )}
+
                             <Button
                                 onClick={handleShare}
                                 variant="outline"
@@ -248,14 +303,17 @@ export default function AlbumPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 p-6">
+                    <div
+                        className="bg-white rounded-xl shadow-sm border border-slate-200/50 p-6 cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setShowMemberModal(true)}
+                    >
                         <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                                 <Users className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
                                 <p className="text-sm text-slate-600">Contributors</p>
-                                <p className="text-2xl font-bold text-slate-900">1</p>
+                                <p className="text-2xl font-bold text-slate-900">{memberCount}</p>
                             </div>
                         </div>
                     </div>
@@ -346,6 +404,15 @@ export default function AlbumPage() {
                     </div>
                 )}
             </main>
+
+            {/* Member Management Modal */}
+            <MemberManagementModal
+                open={showMemberModal}
+                onOpenChange={setShowMemberModal}
+                albumId={albumId}
+                isCreator={isCreator || false}
+                onMemberUpdate={handleMemberUpdate}
+            />
         </div>
     )
 }

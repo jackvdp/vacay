@@ -4,11 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add ability to upload photos">
-      <change afterPath="$PROJECT_DIR$/components/albums/editable-album-title.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add ability to edit album title">
+      <change afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/members/[memberId]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/members/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/albums/member-management-modal.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/albums/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/albums/[id]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/albums.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/albums.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/types/album.ts" beforeDir="false" afterPath="$PROJECT_DIR$/types/album.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +80,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="16718000" />
+      <workItem from="1749114800260" duration="19783000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -159,7 +162,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749306151896</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Add ability to edit album title">
+      <option name="closed" value="true" />
+      <created>1749306346887</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1749306346887</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -176,6 +187,7 @@
     <MESSAGE value="Fixed error" />
     <MESSAGE value="Add album details page" />
     <MESSAGE value="Add ability to upload photos" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add ability to upload photos" />
+    <MESSAGE value="Add ability to edit album title" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add ability to edit album title" />
   </component>
 </project>

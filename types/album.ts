@@ -9,14 +9,6 @@ export interface Album {
     updated_at: string
 }
 
-export interface AlbumMember {
-    id: string
-    album_id: string
-    user_id: string
-    role: 'admin' | 'member'
-    joined_at: string
-}
-
 export interface Media {
     id: string
     album_id: string
@@ -37,4 +29,22 @@ export interface CreateAlbumData {
     title: string
     description?: string
     is_public?: boolean
+}
+
+export interface AlbumMember {
+    id: string
+    album_id: string
+    allowed_email: string
+    role: 'admin' | 'member'
+    added_at: string
+}
+
+// You might also need a Profile type if you don't have it
+export interface Profile {
+    id: string
+    email: string
+    name: string
+    avatar_url?: string
+    created_at: string
+    updated_at: string
 }

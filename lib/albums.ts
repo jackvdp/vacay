@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { Album, CreateAlbumData } from '@/types/album'
+import { supabaseService } from './supabase-service'
 
 export async function createAlbum(data: CreateAlbumData): Promise<{ album: Album | null; error: any }> {
     try {
