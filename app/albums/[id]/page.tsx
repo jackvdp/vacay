@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock, UserPlus } from "lucide-react"
+import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock, UserPlus, Trash2 } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { getAlbumById } from "@/lib/albums"
 import { getAlbumMedia } from "@/lib/media"
@@ -26,6 +26,7 @@ export default function AlbumPage() {
     const [showUpload, setShowUpload] = useState(false)
     const [showMemberModal, setShowMemberModal] = useState(false)
     const [collaboratorCount, setCollaboratorCount] = useState(0)
+    const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null)
 
     const albumId = params.id as string
 
@@ -133,7 +134,51 @@ export default function AlbumPage() {
         }
     }
 
+    const handleDeleteMedia = async (mediaItem: Media) => {
+        // Simple confirmation alert
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${mediaItem.original_name}"? This action cannot be undone.`
+        )
+
+        if (!confirmed) return
+
+        setDeletingMediaId(mediaItem.id)
+
+        try {
+            // Get the current session token
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session?.access_token) {
+                toast.error("Authentication required")
+                return
+            }
+
+            const response = await fetch(`/api/albums/${albumId}/media/${mediaItem.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            })
+
+            const result = await response.json()
+
+            if (response.ok) {
+                toast.success("Photo deleted successfully!")
+                // Remove the deleted media from the state immediately
+                setMedia(prevMedia => prevMedia.filter(m => m.id !== mediaItem.id))
+            } else {
+                toast.error(result.error || "Failed to delete photo")
+            }
+        } catch (error) {
+            console.error("Error deleting media:", error)
+            toast.error("Error deleting photo")
+        } finally {
+            setDeletingMediaId(null)
+        }
+    }
+
     const isCreator = album && user && album.creator_id === user.id
+    const canDelete = isCreator // You can extend this to allow collaborators to delete their own uploads
 
     if (authLoading || loading) {
         return (
@@ -365,7 +410,7 @@ export default function AlbumPage() {
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {media.map((item) => (
-                                <div key={item.id} className="aspect-square bg-slate-100 rounded-lg overflow-hidden group cursor-pointer">
+                                <div key={item.id} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden group cursor-pointer">
                                     {item.mime_type.startsWith('image/') ? (
                                         <img
                                             src={item.blob_url}
@@ -378,6 +423,28 @@ export default function AlbumPage() {
                                                 <video className="w-8 h-8 mx-auto mb-2 text-slate-500" />
                                                 <p className="text-xs text-slate-500">Video</p>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* Delete Button - Only show for creators/collaborators */}
+                                    {canDelete && (
+                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDeleteMedia(item)
+                                                }}
+                                                disabled={deletingMediaId === item.id}
+                                                className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600 shadow-lg"
+                                            >
+                                                {deletingMediaId === item.id ? (
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
