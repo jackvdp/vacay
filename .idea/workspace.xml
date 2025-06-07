@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Show collaborators in album detail screen">
-      <change afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/media/[mediaId]/route.ts" afterDir="false" />
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add ability to delete image">
+      <change afterPath="$PROJECT_DIR$/app/api/share/[shareId]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -75,7 +76,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="21376000" />
+      <workItem from="1749114800260" duration="22005000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -181,7 +182,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749314580112</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Add ability to delete image">
+      <option name="closed" value="true" />
+      <created>1749315267691</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1749315267691</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -201,6 +210,7 @@
     <MESSAGE value="Add ability to edit album title" />
     <MESSAGE value="Add collaborator functionality" />
     <MESSAGE value="Show collaborators in album detail screen" />
-    <option name="LAST_COMMIT_MESSAGE" value="Show collaborators in album detail screen" />
+    <MESSAGE value="Add ability to delete image" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add ability to delete image" />
   </component>
 </project>
