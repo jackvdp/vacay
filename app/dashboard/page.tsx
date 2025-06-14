@@ -63,6 +63,9 @@ export default function DashboardPage() {
                         }
                     })
                 )
+
+                albumsWithCounts.sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()))
+
                 setAlbums(albumsWithCounts)
             } else {
                 setAlbums([])
