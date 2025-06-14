@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Camera, Calendar, Globe, Share2, ArrowLeft, Download, Plus, Smartphone, Monitor } from "lucide-react"
+import { Camera, Calendar, Globe, Share2, ArrowLeft, Download, Plus, Smartphone, Monitor, Video } from "lucide-react"
 import { toast } from "sonner"
 
 // Types for public album
@@ -35,7 +35,7 @@ export default function PublicAlbumPage() {
     const [media, setMedia] = useState<PublicMedia[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [selectedImage, setSelectedImage] = useState<PublicMedia | null>(null)
+    const [selectedMedia, setSelectedMedia] = useState<PublicMedia | null>(null)
     const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
     const [savedCount, setSavedCount] = useState(0)
 
@@ -87,12 +87,12 @@ export default function PublicAlbumPage() {
         }
     }
 
-    const handleImageClick = (mediaItem: PublicMedia) => {
-        setSelectedImage(mediaItem)
+    const handleMediaClick = (mediaItem: PublicMedia) => {
+        setSelectedMedia(mediaItem)
     }
 
-    const closeImageModal = () => {
-        setSelectedImage(null)
+    const closeMediaModal = () => {
+        setSelectedMedia(null)
     }
 
     const detectDevice = () => {
@@ -118,23 +118,22 @@ export default function PublicAlbumPage() {
         })
     }
 
-    // Save individual image with native mobile integration
-    const saveImageToDevice = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
+    // Save individual media (image or video) with native mobile integration
+    const saveMediaToDevice = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
         const { isIOS, isAndroid, isSafari } = detectDevice()
+        const isImage = mediaItem.mime_type.startsWith('image/')
+        const isVideo = mediaItem.mime_type.startsWith('video/')
 
         try {
-            if (isIOS && isSafari) {
-                // For iOS Safari, try the native save approach
+            if (isImage && isIOS && isSafari) {
+                // For iOS Safari images, try the native save approach
                 return await saveImageIOS(mediaItem, index, total)
-            } else if (isAndroid) {
-                // For Android, trigger download with specific naming
-                return await saveImageAndroid(mediaItem, index, total)
             } else {
-                // For desktop/other, regular download
-                return await saveImageGeneric(mediaItem, index, total)
+                // For all other cases (Android, desktop, videos), use generic download
+                return await saveMediaGeneric(mediaItem, index, total)
             }
         } catch (error) {
-            console.error(`Failed to save image ${index + 1}:`, error)
+            console.error(`Failed to save media ${index + 1}:`, error)
             return false
         }
     }
@@ -204,40 +203,29 @@ export default function PublicAlbumPage() {
         }
     }
 
-    const saveImageAndroid = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
-        try {
-            const response = await fetch(mediaItem.blob_url)
-            const blob = await response.blob()
-
-            const url = URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = url
-            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}.jpg`
-
-            document.body.appendChild(link)
-            link.click()
-
-            setTimeout(() => {
-                URL.revokeObjectURL(url)
-                document.body.removeChild(link)
-            }, 100)
-
-            return true
-
-        } catch (error) {
-            console.error('Android save failed:', error)
-            return false
-        }
-    }
-
-    const saveImageGeneric = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
+    const saveMediaGeneric = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
         try {
             const response = await fetch(mediaItem.blob_url)
             const blob = await response.blob()
             const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}.jpg`
+
+            // Get file extension from original name or mime type
+            let extension = ''
+            if (mediaItem.mime_type.startsWith('image/')) {
+                extension = mediaItem.mime_type === 'image/jpeg' ? '.jpg' :
+                    mediaItem.mime_type === 'image/png' ? '.png' :
+                        mediaItem.mime_type === 'image/webp' ? '.webp' :
+                            mediaItem.mime_type === 'image/gif' ? '.gif' : '.jpg'
+            } else if (mediaItem.mime_type.startsWith('video/')) {
+                extension = mediaItem.mime_type === 'video/mp4' ? '.mp4' :
+                    mediaItem.mime_type === 'video/quicktime' || mediaItem.mime_type === 'video/mov' ? '.mov' :
+                        mediaItem.mime_type === 'video/avi' ? '.avi' : '.mp4'
+            }
+
+            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}${extension}`
+
             document.body.appendChild(link)
             link.click()
             URL.revokeObjectURL(url)
@@ -249,14 +237,13 @@ export default function PublicAlbumPage() {
         }
     }
 
-    const saveAllPhotosToLibrary = async () => {
+    const saveAllMediaToLibrary = async () => {
         if (!album || !media.length) return
 
         const { isIOS, isAndroid, isMobile } = detectDevice()
-        const imageMedia = media.filter(item => item.mime_type.startsWith('image/'))
 
-        if (imageMedia.length === 0) {
-            toast.error("No images to save")
+        if (media.length === 0) {
+            toast.error("No media to save")
             return
         }
 
@@ -265,31 +252,32 @@ export default function PublicAlbumPage() {
 
         // Show initial instruction based on device
         if (isIOS) {
-            toast.info("💡 Tip: Each photo will open - tap 'Save to Photos' to add to your library", {
+            toast.info("💡 Tip: Photos will save to Photos app, videos will download", {
                 duration: 5000
             })
         } else if (isAndroid) {
-            toast.info("💡 Tip: Photos will download to your device - check your Gallery app", {
+            toast.info("💡 Tip: Media will download to your device", {
                 duration: 5000
             })
         } else {
-            toast.info("💡 Tip: Photos will download - import them to your photo library", {
+            toast.info("💡 Tip: Media will download to your computer", {
                 duration: 5000
             })
         }
 
         let successCount = 0
-        const totalImages = imageMedia.length
+        const totalMedia = media.length
 
-        for (let i = 0; i < totalImages; i++) {
-            const item = imageMedia[i]
+        for (let i = 0; i < totalMedia; i++) {
+            const item = media[i]
+            const mediaType = item.mime_type.startsWith('image/') ? 'photo' : 'video'
 
             // Update progress
-            toast.loading(`Saving photo ${i + 1} of ${totalImages}...`, {
+            toast.loading(`Saving ${mediaType} ${i + 1} of ${totalMedia}...`, {
                 id: 'save-progress'
             })
 
-            const success = await saveImageToDevice(item, i, totalImages)
+            const success = await saveMediaToDevice(item, i, totalMedia)
 
             if (success) {
                 successCount++
@@ -297,20 +285,20 @@ export default function PublicAlbumPage() {
             }
 
             // Add delay between downloads to prevent overwhelming the browser
-            if (i < totalImages - 1) {
-                await new Promise(resolve => setTimeout(resolve, isIOS ? 2000 : 1000))
+            if (i < totalMedia - 1) {
+                await new Promise(resolve => setTimeout(resolve, isIOS ? 1500 : 800))
             }
         }
 
         // Final success message
-        toast.success(`${successCount} of ${totalImages} photos processed!`, {
+        toast.success(`${successCount} of ${totalMedia} files processed!`, {
             id: 'save-progress'
         })
 
         // Device-specific follow-up instructions
         setTimeout(() => {
             if (isIOS) {
-                toast.success("📱 Photos should now appear in your Photos app!", {
+                toast.success("📱 Photos in Photos app, videos in Files app!", {
                     duration: 6000
                 })
             } else if (isAndroid) {
@@ -318,7 +306,7 @@ export default function PublicAlbumPage() {
                     duration: 6000
                 })
             } else {
-                toast.success("💻 Import the downloaded photos to your photo library!", {
+                toast.success("💻 Files downloaded to your Downloads folder!", {
                     duration: 6000
                 })
             }
@@ -329,18 +317,20 @@ export default function PublicAlbumPage() {
 
     const getSaveButtonText = () => {
         const { isIOS, isAndroid, isMobile } = detectDevice()
+        const totalCount = media.length
         const imageCount = media.filter(item => item.mime_type.startsWith('image/')).length
+        const videoCount = media.filter(item => item.mime_type.startsWith('video/')).length
 
         if (isSavingToLibrary) {
-            return `Saving ${savedCount}/${imageCount}...`
+            return `Saving ${savedCount}/${totalCount}...`
         }
 
         if (isIOS) {
-            return `Add ${imageCount} Photos to Library`
+            return `Save ${totalCount} Files`
         } else if (isAndroid) {
-            return `Save ${imageCount} Photos`
+            return `Download ${totalCount} Files`
         } else {
-            return `Download ${imageCount} Photos`
+            return `Download Album (${totalCount} files)`
         }
     }
 
@@ -352,6 +342,16 @@ export default function PublicAlbumPage() {
         }
 
         return isMobile ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />
+    }
+
+    const getMediaCounts = () => {
+        const imageCount = media.filter(item => item.mime_type.startsWith('image/')).length
+        const videoCount = media.filter(item => item.mime_type.startsWith('video/')).length
+
+        if (imageCount === 0 && videoCount === 0) return "0 files"
+        if (imageCount > 0 && videoCount === 0) return `${imageCount} photo${imageCount !== 1 ? 's' : ''}`
+        if (imageCount === 0 && videoCount > 0) return `${videoCount} video${videoCount !== 1 ? 's' : ''}`
+        return `${imageCount} photo${imageCount !== 1 ? 's' : ''} & ${videoCount} video${videoCount !== 1 ? 's' : ''}`
     }
 
     if (loading) {
@@ -477,7 +477,7 @@ export default function PublicAlbumPage() {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Camera className="h-4 w-4" />
-                                <span>{media.length} photo{media.length !== 1 ? 's' : ''}</span>
+                                <span>{getMediaCounts()}</span>
                             </div>
                         </div>
 
@@ -492,9 +492,9 @@ export default function PublicAlbumPage() {
                                 Share Album
                             </Button>
 
-                            {media.filter(item => item.mime_type.startsWith('image/')).length > 0 && (
+                            {media.length > 0 && (
                                 <Button
-                                    onClick={saveAllPhotosToLibrary}
+                                    onClick={saveAllMediaToLibrary}
                                     disabled={isSavingToLibrary}
                                     size="lg"
                                     className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg"
@@ -508,15 +508,15 @@ export default function PublicAlbumPage() {
                 </div>
             </div>
 
-            {/* Photos Grid */}
+            {/* Media Grid */}
             <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
                 {media.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {media.map((item) => (
                             <div
                                 key={item.id}
-                                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300"
-                                onClick={() => handleImageClick(item)}
+                                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300 relative"
+                                onClick={() => handleMediaClick(item)}
                             >
                                 {item.mime_type.startsWith('image/') ? (
                                     <img
@@ -526,10 +526,16 @@ export default function PublicAlbumPage() {
                                         loading="lazy"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-200 relative">
                                         <div className="text-center">
-                                            <video className="w-8 h-8 mx-auto mb-2 text-slate-500" />
-                                            <p className="text-xs text-slate-500">Video</p>
+                                            <Video className="w-12 h-12 mx-auto mb-2 text-slate-500" />
+                                            <p className="text-xs text-slate-500 font-medium">Video</p>
+                                        </div>
+                                        {/* Video play indicator */}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
+                                                <div className="w-0 h-0 border-l-[12px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -541,34 +547,43 @@ export default function PublicAlbumPage() {
                         <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                             <Camera className="h-10 w-10 text-white" />
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">No photos yet</h3>
+                        <h3 className="text-2xl font-bold text-slate-900 mb-2">No media yet</h3>
                         <p className="text-slate-600 max-w-md mx-auto">
-                            This album is empty. Photos will appear here when they're uploaded.
+                            This album is empty. Photos and videos will appear here when they're uploaded.
                         </p>
                     </div>
                 )}
             </main>
 
-            {/* Image Modal */}
-            {selectedImage && (
+            {/* Media Modal */}
+            {selectedMedia && (
                 <div
                     className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
-                    onClick={closeImageModal}
+                    onClick={closeMediaModal}
                 >
                     <div className="relative max-w-5xl max-h-full">
-                        <img
-                            src={selectedImage.blob_url}
-                            alt={selectedImage.original_name}
-                            className="max-w-full max-h-full object-contain rounded-lg"
-                            onClick={(e) => e.stopPropagation()}
-                        />
+                        {selectedMedia.mime_type.startsWith('image/') ? (
+                            <img
+                                src={selectedMedia.blob_url}
+                                alt={selectedMedia.original_name}
+                                className="max-w-full max-h-full object-contain rounded-lg"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (
+                            <video
+                                src={selectedMedia.blob_url}
+                                controls
+                                className="max-w-full max-h-full object-contain rounded-lg"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        )}
 
                         {/* Modal Controls */}
                         <div className="absolute top-4 right-4 flex space-x-2">
                             <Button
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    saveImageToDevice(selectedImage, 0, 1)
+                                    saveMediaToDevice(selectedMedia, 0, 1)
                                 }}
                                 size="sm"
                                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
@@ -576,7 +591,7 @@ export default function PublicAlbumPage() {
                                 <Download className="h-4 w-4" />
                             </Button>
                             <Button
-                                onClick={closeImageModal}
+                                onClick={closeMediaModal}
                                 size="sm"
                                 variant="outline"
                                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
@@ -585,12 +600,12 @@ export default function PublicAlbumPage() {
                             </Button>
                         </div>
 
-                        {/* Image Info */}
+                        {/* Media Info */}
                         <div className="absolute bottom-4 left-4 right-4">
                             <div className="bg-black/50 rounded-lg p-4 text-white">
-                                <h4 className="font-medium">{selectedImage.original_name}</h4>
+                                <h4 className="font-medium">{selectedMedia.original_name}</h4>
                                 <p className="text-sm text-white/70">
-                                    Uploaded {new Date(selectedImage.uploaded_at).toLocaleDateString()}
+                                    {selectedMedia.mime_type.startsWith('image/') ? 'Photo' : 'Video'} • Uploaded {new Date(selectedMedia.uploaded_at).toLocaleDateString()}
                                 </p>
                             </div>
                         </div>
