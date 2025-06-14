@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock, UserPlus, Trash2 } from "lucide-react"
+import { Camera, ArrowLeft, Share2, Upload, Users, Globe, Lock, UserPlus, Trash2, ExternalLink, Eye } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { getAlbumById } from "@/lib/albums"
 import { getAlbumMedia } from "@/lib/media"
@@ -27,6 +27,7 @@ export default function AlbumPage() {
     const [showMemberModal, setShowMemberModal] = useState(false)
     const [collaboratorCount, setCollaboratorCount] = useState(0)
     const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null)
+    const [isCollaborator, setIsCollaborator] = useState(false)
 
     const albumId = params.id as string
 
@@ -39,6 +40,7 @@ export default function AlbumPage() {
         if (user && albumId) {
             loadAlbumData()
             loadCollaboratorCount()
+            checkCollaboratorStatus()
         }
     }, [user, authLoading, albumId])
 
@@ -101,6 +103,31 @@ export default function AlbumPage() {
         }
     }
 
+    const checkCollaboratorStatus = async () => {
+        if (!user) return
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session?.access_token) return
+
+            const response = await fetch(`/api/albums/${albumId}/members`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+                const userIsCollaborator = result.members?.some((member: any) =>
+                    member.allowed_email === user.email && member.role === 'member'
+                )
+                setIsCollaborator(userIsCollaborator)
+            }
+        } catch (error) {
+            console.error("Error checking collaborator status:", error)
+        }
+    }
+
     const handleUploadComplete = () => {
         loadAlbumData() // Refresh album data
         setShowUpload(false) // Hide upload component
@@ -112,6 +139,7 @@ export default function AlbumPage() {
 
     const handleCollaboratorUpdate = () => {
         loadCollaboratorCount() // Refresh collaborator count when collaborators change
+        checkCollaboratorStatus() // Refresh collaborator status
     }
 
     const handleShare = async () => {
@@ -132,6 +160,12 @@ export default function AlbumPage() {
             document.body.removeChild(textArea)
             toast.success("Share link copied to clipboard! 📋")
         }
+    }
+
+    const handleViewPublicAlbum = () => {
+        if (!album) return
+        const shareUrl = `/share/${album.share_id}`
+        window.open(shareUrl, '_blank')
     }
 
     const handleDeleteMedia = async (mediaItem: Media) => {
@@ -178,7 +212,7 @@ export default function AlbumPage() {
     }
 
     const isCreator = album && user && album.creator_id === user.id
-    const canDelete = isCreator // You can extend this to allow collaborators to delete their own uploads
+    const canDelete = isCreator || isCollaborator // Allow both creators and collaborators to delete
 
     if (authLoading || loading) {
         return (
@@ -277,6 +311,11 @@ export default function AlbumPage() {
                                                     Owner
                                                 </span>
                                             )}
+                                            {isCollaborator && (
+                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                                    Collaborator
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -364,16 +403,46 @@ export default function AlbumPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 p-6">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <Share2 className="h-5 w-5 text-purple-600" />
+                    {/* Enhanced Share Card */}
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-sm border border-purple-200/50 p-6 hover:shadow-lg transition-all duration-200 group">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <Share2 className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-purple-800">Public Album</p>
+                                    <p className="text-xs text-purple-600">Share with anyone</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm text-slate-600">Share Link</p>
-                                <p className="text-xs text-slate-500 font-mono">
-                                    {getBaseURL()}/share/{album.share_id}
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="bg-white/70 rounded-lg p-3 border border-purple-200/30">
+                                <p className="text-xs text-purple-700 font-mono truncate">
+                                    vacay.app/share/{album.share_id}
                                 </p>
+                            </div>
+
+                            <div className="flex space-x-2">
+                                <Button
+                                    onClick={handleShare}
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-100 text-xs"
+                                >
+                                    <Share2 className="h-3 w-3 mr-1" />
+                                    Copy Link
+                                </Button>
+
+                                <Button
+                                    onClick={handleViewPublicAlbum}
+                                    size="sm"
+                                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs"
+                                >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    Preview
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -426,7 +495,7 @@ export default function AlbumPage() {
                                         </div>
                                     )}
 
-                                    {/* Delete Button - Only show for creators/collaborators */}
+                                    {/* Delete Button - Available for both creators and collaborators */}
                                     {canDelete && (
                                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <Button
@@ -483,14 +552,4 @@ export default function AlbumPage() {
             />
         </div>
     )
-}
-
-function getBaseURL() {
-    if (typeof window === 'undefined') {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'localhost:3000';
-        // Remove http:// or https:// if present
-        return baseUrl.replace(/^https?:\/\//, '');
-    }
-    // Remove protocol from window.location.origin
-    return window.location.origin.replace(/^https?:\/\//, '');
 }

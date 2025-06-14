@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Create public share page">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/albums/[albumId]/media/[mediaId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/media/[mediaId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eslint.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.mjs" afterDir="false" />
-    </list>
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Improve navbar and get albums for collaborator not created albums" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,19 +39,20 @@
     <option name="openDirectoriesWithSingleClick" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/jackvanderpump/Repos/vacay/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/jackvanderpump/Repos/vacay/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -78,6 +74,7 @@
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
       <workItem from="1749114800260" duration="25513000" />
+      <workItem from="1749890331528" duration="10645000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -199,7 +196,55 @@
       <option name="project" value="LOCAL" />
       <updated>1749315846146</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Get album working and ability to delete photos">
+      <option name="closed" value="true" />
+      <created>1749899541524</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1749899541524</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Uploads videos">
+      <option name="closed" value="true" />
+      <created>1749901377839</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1749901377839</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Better support for videos">
+      <option name="closed" value="true" />
+      <created>1749901713095</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1749901713095</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Add size limit for config">
+      <option name="closed" value="true" />
+      <created>1749903098705</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1749903098705</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Do client side uploading">
+      <option name="closed" value="true" />
+      <created>1749905374768</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1749905374768</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Improve navbar and get albums for collaborator not created albums">
+      <option name="closed" value="true" />
+      <created>1749906253045</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1749906253045</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -221,6 +266,12 @@
     <MESSAGE value="Show collaborators in album detail screen" />
     <MESSAGE value="Add ability to delete image" />
     <MESSAGE value="Create public share page" />
-    <option name="LAST_COMMIT_MESSAGE" value="Create public share page" />
+    <MESSAGE value="Get album working and ability to delete photos" />
+    <MESSAGE value="Uploads videos" />
+    <MESSAGE value="Better support for videos" />
+    <MESSAGE value="Add size limit for config" />
+    <MESSAGE value="Do client side uploading" />
+    <MESSAGE value="Improve navbar and get albums for collaborator not created albums" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improve navbar and get albums for collaborator not created albums" />
   </component>
 </project>

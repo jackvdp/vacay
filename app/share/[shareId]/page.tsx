@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Camera, Calendar, Globe, Share2, ArrowLeft, Download, Plus, Smartphone, Monitor, Video } from "lucide-react"
 import { toast } from "sonner"
+import Navbar from "@/components/navbar"
 
 // Types for public album
 interface PublicAlbum {
@@ -430,21 +431,7 @@ export default function PublicAlbumPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
-            {/* Simple Header */}
-            <div className="bg-white/70 backdrop-blur-xl border-b border-slate-200/20">
-                <div className="max-w-6xl mx-auto px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                                <Camera className="h-5 w-5 text-white" />
-                            </div>
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                                Vacay
-                            </h1>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Navbar />
 
             {/* Album Header */}
             <div className="bg-white border-b border-slate-200/50">
