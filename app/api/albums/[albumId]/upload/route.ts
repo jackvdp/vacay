@@ -3,6 +3,57 @@ import { put } from '@vercel/blob'
 import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase-service'
 
+// Helper function to detect file type from filename and MIME type
+function getFileTypeInfo(file: File): { mimeType: string; isValid: boolean } {
+    const fileName = file.name.toLowerCase()
+    const originalMimeType = file.type
+
+    // Define valid types with their file extensions
+    const validTypes = {
+        // Images
+        'image/jpeg': ['.jpg', '.jpeg'],
+        'image/png': ['.png'],
+        'image/webp': ['.webp'],
+        'image/gif': ['.gif'],
+        // Videos
+        'video/mp4': ['.mp4'],
+        'video/mov': ['.mov'],
+        'video/quicktime': ['.mov'],
+        'video/avi': ['.avi']
+    }
+
+    // If the MIME type is already valid, use it
+    if (Object.keys(validTypes).includes(originalMimeType)) {
+        return { mimeType: originalMimeType, isValid: true }
+    }
+
+    // If MIME type is generic (application/octet-stream), detect from extension
+    if (originalMimeType === 'application/octet-stream' || !originalMimeType) {
+        for (const [mimeType, extensions] of Object.entries(validTypes)) {
+            if (extensions.some(ext => fileName.endsWith(ext))) {
+                console.log(`Detected ${fileName} as ${mimeType} based on file extension`)
+                return { mimeType, isValid: true }
+            }
+        }
+    }
+
+    // Check if it's a valid file type based on extension even if MIME type is different
+    const allValidExtensions = Object.values(validTypes).flat()
+    const hasValidExtension = allValidExtensions.some(ext => fileName.endsWith(ext))
+
+    if (hasValidExtension) {
+        // Find the correct MIME type for this extension
+        for (const [mimeType, extensions] of Object.entries(validTypes)) {
+            if (extensions.some(ext => fileName.endsWith(ext))) {
+                console.log(`Corrected MIME type for ${fileName} from ${originalMimeType} to ${mimeType}`)
+                return { mimeType, isValid: true }
+            }
+        }
+    }
+
+    return { mimeType: originalMimeType, isValid: false }
+}
+
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ albumId: string }> }
@@ -51,18 +102,21 @@ export async function POST(
             )
         }
 
-        // Check if user has permission (creator or member)
-        const { data: membership, error: membershipError } = await supabaseService
-            .from('album_members')
-            .select('id, role')
-            .eq('album_id', albumId)
-            .eq('user_id', user.id)
-            .single()
-
-        console.log('Membership check:', { membership, membershipError })
-
+        // Check if user has permission (creator or collaborator)
         const isCreator = album.creator_id === user.id
-        const isMember = !!membership && !membershipError
+        let isMember = false
+
+        if (!isCreator) {
+            const { data: membership, error: membershipError } = await supabaseService
+                .from('album_members')
+                .select('id, role')
+                .eq('album_id', albumId)
+                .eq('allowed_email', user.email)
+                .single()
+
+            console.log('Membership check:', { membership, membershipError })
+            isMember = !!membership && !membershipError
+        }
 
         console.log('Permission check:', { isCreator, isMember, creatorId: album.creator_id, userId: user.id })
 
@@ -84,24 +138,23 @@ export async function POST(
             )
         }
 
-        // Validate file type
-        const validTypes = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
-            'video/mp4', 'video/mov', 'video/avi'
-        ]
+        // Validate file type using improved detection
+        const { mimeType: detectedMimeType, isValid } = getFileTypeInfo(file)
 
-        if (!validTypes.includes(file.type)) {
+        if (!isValid) {
             return NextResponse.json(
-                { error: `Invalid file type: ${file.type}. Supported types: ${validTypes.join(', ')}` },
+                { error: `Invalid file type: ${file.type} (${file.name}). Supported types: images (jpg, png, webp, gif) and videos (mp4, mov, avi)` },
                 { status: 400 }
             )
         }
 
-        // Validate file size (50MB limit)
-        const maxSize = 50 * 1024 * 1024 // 50MB
+        console.log(`File type validation: ${file.name} (${file.type}) -> ${detectedMimeType}`)
+
+        // Validate file size (200Mb limit)
+        const maxSize = 200 * 1024 * 1024 // 50MB
         if (file.size > maxSize) {
             return NextResponse.json(
-                { error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 50MB)` },
+                { error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 200MB)` },
                 { status: 400 }
             )
         }
@@ -124,7 +177,7 @@ export async function POST(
         let width: number | undefined
         let height: number | undefined
 
-        if (file.type.startsWith('image/')) {
+        if (detectedMimeType.startsWith('image/')) {
             try {
                 const arrayBuffer = await file.arrayBuffer()
                 const dimensions = await getImageDimensionsFromBuffer(arrayBuffer)
@@ -141,7 +194,7 @@ export async function POST(
             uploader_id: user.id,
             filename: filename,
             original_name: file.name,
-            mime_type: file.type,
+            mime_type: detectedMimeType, // Use the corrected MIME type
             size_bytes: file.size,
             blob_url: blob.url,
             width,

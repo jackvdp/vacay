@@ -26,8 +26,8 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
                 toast.error(`${file.name} is not a supported file type`)
                 return false
             }
-            if (file.size > 50 * 1024 * 1024) { // 50MB limit
-                toast.error(`${file.name} is too large (max 50MB)`)
+            if (file.size > 200 * 1024 * 1024) { // 200MB limit
+                toast.error(`${file.name} is too large (max 200MB)`)
                 return false
             }
             return true
@@ -168,7 +168,7 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
                 </Button>
 
                 <p className="text-xs text-slate-500 mt-4">
-                    Supports JPG, PNG, WebP, GIF, MP4, MOV • Max 50MB per file
+                    Supports JPG, PNG, WebP, GIF, MP4, MOV • Max 200MB per file
                 </p>
             </div>
 

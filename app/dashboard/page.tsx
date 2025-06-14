@@ -8,13 +8,18 @@ import { Camera, Plus } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { CreateAlbumModal } from "@/components/albums/create-album-modal"
 import { getUserAlbums } from "@/lib/albums"
+import { supabase } from "@/lib/supabase"
 import type { Album } from "@/types/album"
+
+interface AlbumWithPhotos extends Album {
+    photo_count: number
+}
 
 export default function DashboardPage() {
     const { user, loading } = useAuth()
     const router = useRouter()
     const [showCreateModal, setShowCreateModal] = useState(false)
-    const [albums, setAlbums] = useState<Album[]>([])
+    const [albums, setAlbums] = useState<AlbumWithPhotos[]>([])
     const [albumsLoading, setAlbumsLoading] = useState(true)
 
     useEffect(() => {
@@ -35,11 +40,36 @@ export default function DashboardPage() {
             const { albums: userAlbums, error } = await getUserAlbums()
             if (error) {
                 console.error("Error loading albums:", error)
+                setAlbums([])
+            } else if (userAlbums) {
+                // Get photo counts for each album
+                const albumsWithCounts = await Promise.all(
+                    userAlbums.map(async (album) => {
+                        try {
+                            const { count, error: countError } = await supabase
+                                .from('media')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('album_id', album.id)
+
+                            if (countError) {
+                                console.error(`Error getting count for album ${album.id}:`, countError)
+                                return { ...album, photo_count: 0 }
+                            }
+
+                            return { ...album, photo_count: count || 0 }
+                        } catch (error) {
+                            console.error(`Error processing album ${album.id}:`, error)
+                            return { ...album, photo_count: 0 }
+                        }
+                    })
+                )
+                setAlbums(albumsWithCounts)
             } else {
-                setAlbums(userAlbums || [])
+                setAlbums([])
             }
         } catch (error) {
             console.error("Error loading albums:", error)
+            setAlbums([])
         } finally {
             setAlbumsLoading(false)
         }
@@ -47,6 +77,12 @@ export default function DashboardPage() {
 
     const handleAlbumCreated = () => {
         loadAlbums() // Refresh the albums list
+    }
+
+    const formatPhotoCount = (count: number) => {
+        if (count === 0) return "0 photos"
+        if (count === 1) return "1 photo"
+        return `${count} photos`
     }
 
     if (loading) {
@@ -134,9 +170,13 @@ export default function DashboardPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">{album.title}</h3>
+                                    <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">
+                                        {album.title}
+                                    </h3>
                                     {album.description && (
-                                        <p className="text-slate-600 text-sm mb-4 line-clamp-2">{album.description}</p>
+                                        <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                                            {album.description}
+                                        </p>
                                     )}
                                     <div className="flex items-center justify-between">
                                         <p className="text-xs text-slate-500">
@@ -144,7 +184,7 @@ export default function DashboardPage() {
                                         </p>
                                         <div className="flex items-center space-x-1 text-xs text-slate-500">
                                             <Camera className="h-3 w-3" />
-                                            <span>0 photos</span>
+                                            <span>{formatPhotoCount(album.photo_count)}</span>
                                         </div>
                                     </div>
                                 </div>
