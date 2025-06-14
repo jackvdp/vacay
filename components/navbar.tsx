@@ -1,9 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Camera, LogOut } from "lucide-react"
+import { Camera, LogOut, LayoutDashboard } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 interface NavbarProps {
     fixed?: boolean
@@ -12,12 +13,21 @@ interface NavbarProps {
 
 export default function Navbar({ fixed = false, className = "" }: NavbarProps) {
     const { user, loading, signInWithGoogle, signOut } = useAuth()
+    const router = useRouter()
 
     const navClasses = `
     ${fixed ? 'fixed top-0 z-50' : ''} 
     w-full bg-white/70 backdrop-blur-xl border-b border-slate-200/20 
     ${className}
   `.trim()
+
+    const handleLogoClick = () => {
+        router.push('/')
+    }
+
+    const handleDashboardClick = () => {
+        router.push('/dashboard')
+    }
 
     return (
         <motion.nav
@@ -30,9 +40,11 @@ export default function Navbar({ fixed = false, className = "" }: NavbarProps) {
                 <div className="flex justify-between items-center h-16">
                     {/* Logo */}
                     <motion.div
-                        className="flex items-center space-x-3"
+                        className="flex items-center space-x-3 cursor-pointer"
                         whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         transition={{ type: "spring", stiffness: 400 }}
+                        onClick={handleLogoClick}
                     >
                         <div className="relative">
                             <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
@@ -62,9 +74,20 @@ export default function Navbar({ fixed = false, className = "" }: NavbarProps) {
                                         className="w-8 h-8 rounded-full"
                                     />
                                     <span className="text-slate-700 font-medium hidden sm:block">
-                    {user.user_metadata?.full_name}
-                  </span>
+                                        {user.user_metadata?.full_name}
+                                    </span>
                                 </div>
+
+                                <Button
+                                    onClick={handleDashboardClick}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                                >
+                                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                                    Dashboard
+                                </Button>
+
                                 <Button
                                     onClick={signOut}
                                     variant="outline"

@@ -38,6 +38,8 @@ export async function createAlbum(data: CreateAlbumData): Promise<{ album: Album
     }
 }
 
+// Updated getUserAlbums function for lib/albums.ts
+
 export async function getUserAlbums(): Promise<{ albums: Album[] | null; error: any }> {
     try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -46,14 +48,64 @@ export async function getUserAlbums(): Promise<{ albums: Album[] | null; error: 
             return { albums: null, error: 'User not authenticated' }
         }
 
-        const { data: albums, error } = await supabase
+        console.log('Fetching albums for user:', user.email)
+
+        // Get albums where user is the creator
+        const { data: createdAlbums, error: createdError } = await supabase
             .from('albums')
             .select('*')
             .eq('creator_id', user.id)
             .order('created_at', { ascending: false })
 
-        return { albums, error }
+        if (createdError) {
+            console.error('Error fetching created albums:', createdError)
+            return { albums: null, error: createdError }
+        }
+
+        // Get albums where user is a collaborator
+        const { data: collaboratorData, error: collaboratorError } = await supabase
+            .from('album_members')
+            .select(`
+                album_id,
+                albums!inner (
+                    id,
+                    title,
+                    description,
+                    share_id,
+                    is_public,
+                    creator_id,
+                    created_at,
+                    updated_at
+                )
+            `)
+            .eq('allowed_email', user.email)
+
+        if (collaboratorError) {
+            console.error('Error fetching collaborated albums:', collaboratorError)
+            // Don't return error here, just log it and continue with created albums only
+        }
+
+        // Extract albums from collaborator data
+        const collaboratedAlbums = collaboratorData?.map(item => item.albums).filter(Boolean) || []
+
+        // Combine and deduplicate albums
+        const allAlbums = [...(createdAlbums || []), ...collaboratedAlbums]
+
+        // Remove duplicates based on album ID
+        const uniqueAlbums = allAlbums.filter((album, index, self) =>
+            index === self.findIndex(a => a.id === album.id)
+        )
+
+        // Sort by created_at descending
+        uniqueAlbums.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+        console.log(`Found ${createdAlbums?.length || 0} created albums and ${collaboratedAlbums.length} collaborated albums`)
+        console.log('Total unique albums:', uniqueAlbums.length)
+
+        return { albums: uniqueAlbums, error: null }
+
     } catch (error) {
+        console.error('Error in getUserAlbums:', error)
         return { albums: null, error }
     }
 }
