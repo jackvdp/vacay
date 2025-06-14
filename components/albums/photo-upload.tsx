@@ -5,17 +5,83 @@ import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Upload, X, Image as ImageIcon, Video, FileText, Check, AlertCircle } from "lucide-react"
-import { uploadMedia, isValidFileType, formatFileSize, type UploadProgress } from "@/lib/media"
+import { upload } from '@vercel/blob/client'
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 interface PhotoUploadProps {
     albumId: string
     onUploadComplete?: () => void
 }
 
+interface UploadProgress {
+    fileName: string
+    progress: number
+    status: 'uploading' | 'processing' | 'complete' | 'error'
+    error?: string
+}
+
 export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
     const [uploads, setUploads] = useState<UploadProgress[]>([])
     const [isUploading, setIsUploading] = useState(false)
+
+    // Helper function to validate file types
+    const isValidFileType = (file: File): boolean => {
+        const fileName = file.name.toLowerCase()
+        const mimeType = file.type
+
+        const validTypes = [
+            { mime: 'image/jpeg', extensions: ['.jpg', '.jpeg'] },
+            { mime: 'image/png', extensions: ['.png'] },
+            { mime: 'image/webp', extensions: ['.webp'] },
+            { mime: 'image/gif', extensions: ['.gif'] },
+            { mime: 'video/mp4', extensions: ['.mp4'] },
+            { mime: 'video/mov', extensions: ['.mov'] },
+            { mime: 'video/quicktime', extensions: ['.mov'] },
+            { mime: 'video/avi', extensions: ['.avi'] }
+        ]
+
+        // Check by MIME type
+        if (validTypes.some(type => type.mime === mimeType)) {
+            return true
+        }
+
+        // Check by extension (for cases where MIME type is generic)
+        return validTypes.some(type =>
+            type.extensions.some(ext => fileName.endsWith(ext))
+        )
+    }
+
+    // Get corrected MIME type based on file extension
+    const getCorrectMimeType = (file: File): string => {
+        const fileName = file.name.toLowerCase()
+        const originalMimeType = file.type
+
+        const typeMap: Record<string, string> = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.webp': 'image/webp',
+            '.gif': 'image/gif',
+            '.mp4': 'video/mp4',
+            '.mov': 'video/mov',
+            '.avi': 'video/avi'
+        }
+
+        // If original MIME type is valid, use it
+        if (originalMimeType && originalMimeType !== 'application/octet-stream') {
+            return originalMimeType
+        }
+
+        // Otherwise, determine from extension
+        for (const [ext, mime] of Object.entries(typeMap)) {
+            if (fileName.endsWith(ext)) {
+                return mime
+            }
+        }
+
+        return originalMimeType || 'application/octet-stream'
+    }
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         if (!acceptedFiles.length) return
@@ -45,53 +111,97 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
         }))
         setUploads(initialUploads)
 
-        // Upload files one by one
-        for (let i = 0; i < validFiles.length; i++) {
-            const file = validFiles[i]
-
+        // Upload files concurrently (but limit concurrency to avoid overwhelming)
+        const uploadPromises = validFiles.map(async (file, index) => {
             try {
-                // Update progress to show uploading
-                setUploads(prev => prev.map((upload, index) =>
-                    index === i ? { ...upload, progress: 10, status: 'uploading' } : upload
+                // Update progress to show uploading started
+                setUploads(prev => prev.map((upload, i) =>
+                    i === index ? { ...upload, progress: 10, status: 'uploading' } : upload
                 ))
 
-                const { media, error } = await uploadMedia({
-                    albumId,
-                    file
+                // Generate unique filename
+                const timestamp = Date.now()
+                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+                const filename = `albums/${albumId}/${timestamp}_${sanitizedName}`
+
+                console.log(`Starting direct upload for ${file.name}`)
+
+                // Get user session for authentication
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session?.access_token) {
+                    throw new Error('Not authenticated')
+                }
+
+                // Direct upload to Vercel Blob using client upload
+                const blob = await upload(filename, file, {
+                    access: 'public',
+                    handleUploadUrl: `/api/albums/${albumId}/upload-token`,
+                    clientPayload: JSON.stringify({
+                        userToken: session.access_token,
+                        albumId: albumId
+                    })
                 })
 
-                if (error) {
-                    setUploads(prev => prev.map((upload, index) =>
-                        index === i ? {
-                            ...upload,
-                            progress: 0,
-                            status: 'error',
-                            error: error.message || 'Upload failed'
-                        } : upload
-                    ))
-                    toast.error(`Failed to upload ${file.name}`)
-                } else {
-                    setUploads(prev => prev.map((upload, index) =>
-                        index === i ? { ...upload, progress: 100, status: 'complete' } : upload
-                    ))
-                    toast.success(`${file.name} uploaded successfully!`)
+                console.log(`Direct upload completed for ${file.name}:`, blob.url)
+
+                // Update progress to show blob upload complete
+                setUploads(prev => prev.map((upload, i) =>
+                    i === index ? { ...upload, progress: 80, status: 'processing' } : upload
+                ))
+
+                // Now save metadata to database
+                const mediaData = {
+                    album_id: albumId,
+                    filename: filename,
+                    original_name: file.name,
+                    mime_type: getCorrectMimeType(file),
+                    size_bytes: file.size,
+                    blob_url: blob.url,
                 }
-            } catch (err) {
-                setUploads(prev => prev.map((upload, index) =>
-                    index === i ? {
+
+                const metadataResponse = await fetch(`/api/albums/${albumId}/metadata`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(mediaData)
+                })
+
+                if (!metadataResponse.ok) {
+                    const errorResult = await metadataResponse.json()
+                    throw new Error(errorResult.error || 'Failed to save metadata')
+                }
+
+                // Mark as complete
+                setUploads(prev => prev.map((upload, i) =>
+                    i === index ? { ...upload, progress: 100, status: 'complete' } : upload
+                ))
+
+                toast.success(`${file.name} uploaded successfully!`)
+                return true
+
+            } catch (error: any) {
+                console.error(`Upload failed for ${file.name}:`, error)
+                setUploads(prev => prev.map((upload, i) =>
+                    i === index ? {
                         ...upload,
                         progress: 0,
                         status: 'error',
-                        error: 'Upload failed'
+                        error: error.message || 'Upload failed'
                     } : upload
                 ))
-                toast.error(`Failed to upload ${file.name}`)
+                toast.error(`Failed to upload ${file.name}: ${error.message}`)
+                return false
             }
-        }
+        })
+
+        // Wait for all uploads to complete
+        await Promise.all(uploadPromises)
 
         setIsUploading(false)
 
-        // Clear uploads after a delay
+        // Clear uploads after a delay and refresh parent
         setTimeout(() => {
             setUploads([])
             onUploadComplete?.()
@@ -197,10 +307,17 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
                                     {upload.status === 'error' ? (
                                         <p className="text-xs text-red-600">{upload.error}</p>
                                     ) : (
-                                        <Progress
-                                            value={upload.progress}
-                                            className="h-2"
-                                        />
+                                        <div className="space-y-1">
+                                            <Progress
+                                                value={upload.progress}
+                                                className="h-2"
+                                            />
+                                            <p className="text-xs text-slate-500">
+                                                {upload.status === 'uploading' ? 'Uploading...' :
+                                                    upload.status === 'processing' ? 'Saving...' :
+                                                        upload.status === 'complete' ? 'Complete!' : ''}
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
