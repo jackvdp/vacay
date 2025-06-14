@@ -62,6 +62,10 @@ export async function getUserAlbums(): Promise<{ albums: Album[] | null; error: 
             return { albums: null, error: createdError }
         }
 
+        if (!user.email) {
+            return { albums: null, error: 'User email not found' }
+        }
+
         // Get albums where user is a collaborator
         const { data: collaboratorData, error: collaboratorError } = await supabase
             .from('album_members')
@@ -78,7 +82,7 @@ export async function getUserAlbums(): Promise<{ albums: Album[] | null; error: 
                     updated_at
                 )
             `)
-            .eq('allowed_email', user.email)
+            .ilike('allowed_email', user.email)
 
         if (collaboratorError) {
             console.error('Error fetching collaborated albums:', collaboratorError)
