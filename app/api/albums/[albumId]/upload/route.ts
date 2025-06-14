@@ -5,10 +5,11 @@ import { supabaseService } from '@/lib/supabase-service'
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { albumId: string } }
+    { params }: { params: Promise<{ albumId: string }> }
 ) {
     try {
-        const albumId = params.albumId
+        const paramsReceived = await params
+        const albumId = paramsReceived.albumId
 
         // Get the authorization header
         const authHeader = request.headers.get('authorization')

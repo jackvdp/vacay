@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
 import type { Album, CreateAlbumData } from '@/types/album'
-import { supabaseService } from './supabase-service'
 
 export async function createAlbum(data: CreateAlbumData): Promise<{ album: Album | null; error: any }> {
     try {
@@ -13,6 +12,7 @@ export async function createAlbum(data: CreateAlbumData): Promise<{ album: Album
         console.log('Creating album with data:', data)
         console.log('User ID:', user.id)
 
+        // Just create the album - no member management for now
         const { data: album, error } = await supabase
             .from('albums')
             .insert({
@@ -25,12 +25,13 @@ export async function createAlbum(data: CreateAlbumData): Promise<{ album: Album
             .single()
 
         if (error) {
-            console.error('Supabase error:', error)
-        } else {
-            console.log('Album created successfully:', album)
+            console.error('Supabase error!:', error)
+            return { album: null, error }
         }
 
-        return { album, error }
+        console.log('Album created successfully:', album)
+        return { album, error: null }
+
     } catch (error) {
         console.error('Catch error:', error)
         return { album: null, error }

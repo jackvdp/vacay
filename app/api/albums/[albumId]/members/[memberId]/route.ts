@@ -6,7 +6,7 @@ import { supabaseService } from '@/lib/supabase-service'
 // DELETE /api/albums/[albumId]/members/[memberId] - Remove a collaborator
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { albumId: string; memberId: string } }
+    { params }: { params: Promise<{ albumId: string; memberId: string }> }
 ) {
     try {
         // Get the authorization header
@@ -31,7 +31,7 @@ export async function DELETE(
             )
         }
 
-        const { albumId, memberId } = params
+        const { albumId, memberId } = await params
 
         // Check if user is album creator (only creators can remove collaborators)
         const { data: album } = await supabaseService

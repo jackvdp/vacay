@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Camera, Calendar, Globe, Share2, ArrowLeft, Download } from "lucide-react"
+import { Camera, Calendar, Globe, Share2, ArrowLeft, Download, Plus, Smartphone, Monitor } from "lucide-react"
 import { toast } from "sonner"
 
 // Types for public album
@@ -36,6 +36,8 @@ export default function PublicAlbumPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [selectedImage, setSelectedImage] = useState<PublicMedia | null>(null)
+    const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
+    const [savedCount, setSavedCount] = useState(0)
 
     const shareId = params.shareId as string
 
@@ -93,23 +95,263 @@ export default function PublicAlbumPage() {
         setSelectedImage(null)
     }
 
-    const downloadImage = async (mediaItem: PublicMedia) => {
+    const detectDevice = () => {
+        const userAgent = navigator.userAgent.toLowerCase()
+        const isIOS = /iphone|ipad|ipod/.test(userAgent)
+        const isAndroid = /android/.test(userAgent)
+        const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent)
+        const isMobile = isIOS || isAndroid
+
+        return { isIOS, isAndroid, isSafari, isMobile }
+    }
+
+    // Convert blob URL to data URL for better mobile compatibility
+    const convertToDataURL = async (blobUrl: string): Promise<string> => {
+        const response = await fetch(blobUrl)
+        const blob = await response.blob()
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+        })
+    }
+
+    // Save individual image with native mobile integration
+    const saveImageToDevice = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
+        const { isIOS, isAndroid, isSafari } = detectDevice()
+
+        try {
+            if (isIOS && isSafari) {
+                // For iOS Safari, try the native save approach
+                return await saveImageIOS(mediaItem, index, total)
+            } else if (isAndroid) {
+                // For Android, trigger download with specific naming
+                return await saveImageAndroid(mediaItem, index, total)
+            } else {
+                // For desktop/other, regular download
+                return await saveImageGeneric(mediaItem, index, total)
+            }
+        } catch (error) {
+            console.error(`Failed to save image ${index + 1}:`, error)
+            return false
+        }
+    }
+
+    const saveImageIOS = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
+        try {
+            // Convert to data URL for better iOS compatibility
+            const dataUrl = await convertToDataURL(mediaItem.blob_url)
+
+            // Create a temporary image element
+            const img = new Image()
+            img.src = dataUrl
+
+            await new Promise((resolve, reject) => {
+                img.onload = resolve
+                img.onerror = reject
+            })
+
+            // Create a canvas to ensure proper format
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')!
+            canvas.width = img.naturalWidth
+            canvas.height = img.naturalHeight
+            ctx.drawImage(img, 0, 0)
+
+            // Convert to blob
+            const blob = await new Promise<Blob>((resolve) => {
+                canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9)
+            })
+
+            // Try to use the native share API for iOS
+            if (navigator.share && navigator.canShare) {
+                const file = new File([blob], `${album?.title}_${index + 1}.jpg`, { type: 'image/jpeg' })
+
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: `Photo ${index + 1} from ${album?.title}`
+                    })
+                    return true
+                }
+            }
+
+            // Fallback: trigger download
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}.jpg`
+
+            // For iOS, we need to open in new tab for save option
+            link.target = '_blank'
+            link.rel = 'noopener'
+
+            document.body.appendChild(link)
+            link.click()
+
+            setTimeout(() => {
+                URL.revokeObjectURL(url)
+                document.body.removeChild(link)
+            }, 100)
+
+            return true
+
+        } catch (error) {
+            console.error('iOS save failed:', error)
+            return false
+        }
+    }
+
+    const saveImageAndroid = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
         try {
             const response = await fetch(mediaItem.blob_url)
             const blob = await response.blob()
-            const url = window.URL.createObjectURL(blob)
+
+            const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = mediaItem.original_name
+            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}.jpg`
+
             document.body.appendChild(link)
             link.click()
-            window.URL.revokeObjectURL(url)
-            document.body.removeChild(link)
-            toast.success("Download started!")
+
+            setTimeout(() => {
+                URL.revokeObjectURL(url)
+                document.body.removeChild(link)
+            }, 100)
+
+            return true
+
         } catch (error) {
-            console.error("Download failed:", error)
-            toast.error("Download failed")
+            console.error('Android save failed:', error)
+            return false
         }
+    }
+
+    const saveImageGeneric = async (mediaItem: PublicMedia, index: number, total: number): Promise<boolean> => {
+        try {
+            const response = await fetch(mediaItem.blob_url)
+            const blob = await response.blob()
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `${album?.title}_${String(index + 1).padStart(2, '0')}.jpg`
+            document.body.appendChild(link)
+            link.click()
+            URL.revokeObjectURL(url)
+            document.body.removeChild(link)
+            return true
+        } catch (error) {
+            console.error('Generic save failed:', error)
+            return false
+        }
+    }
+
+    const saveAllPhotosToLibrary = async () => {
+        if (!album || !media.length) return
+
+        const { isIOS, isAndroid, isMobile } = detectDevice()
+        const imageMedia = media.filter(item => item.mime_type.startsWith('image/'))
+
+        if (imageMedia.length === 0) {
+            toast.error("No images to save")
+            return
+        }
+
+        setIsSavingToLibrary(true)
+        setSavedCount(0)
+
+        // Show initial instruction based on device
+        if (isIOS) {
+            toast.info("💡 Tip: Each photo will open - tap 'Save to Photos' to add to your library", {
+                duration: 5000
+            })
+        } else if (isAndroid) {
+            toast.info("💡 Tip: Photos will download to your device - check your Gallery app", {
+                duration: 5000
+            })
+        } else {
+            toast.info("💡 Tip: Photos will download - import them to your photo library", {
+                duration: 5000
+            })
+        }
+
+        let successCount = 0
+        const totalImages = imageMedia.length
+
+        for (let i = 0; i < totalImages; i++) {
+            const item = imageMedia[i]
+
+            // Update progress
+            toast.loading(`Saving photo ${i + 1} of ${totalImages}...`, {
+                id: 'save-progress'
+            })
+
+            const success = await saveImageToDevice(item, i, totalImages)
+
+            if (success) {
+                successCount++
+                setSavedCount(successCount)
+            }
+
+            // Add delay between downloads to prevent overwhelming the browser
+            if (i < totalImages - 1) {
+                await new Promise(resolve => setTimeout(resolve, isIOS ? 2000 : 1000))
+            }
+        }
+
+        // Final success message
+        toast.success(`${successCount} of ${totalImages} photos processed!`, {
+            id: 'save-progress'
+        })
+
+        // Device-specific follow-up instructions
+        setTimeout(() => {
+            if (isIOS) {
+                toast.success("📱 Photos should now appear in your Photos app!", {
+                    duration: 6000
+                })
+            } else if (isAndroid) {
+                toast.success("📱 Check your Downloads folder or Gallery app!", {
+                    duration: 6000
+                })
+            } else {
+                toast.success("💻 Import the downloaded photos to your photo library!", {
+                    duration: 6000
+                })
+            }
+        }, 1000)
+
+        setIsSavingToLibrary(false)
+    }
+
+    const getSaveButtonText = () => {
+        const { isIOS, isAndroid, isMobile } = detectDevice()
+        const imageCount = media.filter(item => item.mime_type.startsWith('image/')).length
+
+        if (isSavingToLibrary) {
+            return `Saving ${savedCount}/${imageCount}...`
+        }
+
+        if (isIOS) {
+            return `Add ${imageCount} Photos to Library`
+        } else if (isAndroid) {
+            return `Save ${imageCount} Photos`
+        } else {
+            return `Download ${imageCount} Photos`
+        }
+    }
+
+    const getSaveButtonIcon = () => {
+        const { isMobile } = detectDevice()
+
+        if (isSavingToLibrary) {
+            return <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        }
+
+        return isMobile ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />
     }
 
     if (loading) {
@@ -200,16 +442,6 @@ export default function PublicAlbumPage() {
                                 Vacay
                             </h1>
                         </div>
-
-                        <Button
-                            onClick={handleShare}
-                            variant="outline"
-                            size="sm"
-                            className="border-teal-200 text-teal-600 hover:bg-teal-50"
-                        >
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Share
-                        </Button>
                     </div>
                 </div>
             </div>
@@ -234,7 +466,7 @@ export default function PublicAlbumPage() {
                             </p>
                         )}
 
-                        <div className="flex items-center justify-center space-x-6 text-sm text-slate-500">
+                        <div className="flex items-center justify-center space-x-6 text-sm text-slate-500 mb-8">
                             <div className="flex items-center space-x-2">
                                 <Globe className="h-4 w-4" />
                                 <span>Public Album</span>
@@ -247,6 +479,30 @@ export default function PublicAlbumPage() {
                                 <Camera className="h-4 w-4" />
                                 <span>{media.length} photo{media.length !== 1 ? 's' : ''}</span>
                             </div>
+                        </div>
+
+                        <div className="flex items-center justify-center space-x-4">
+                            <Button
+                                onClick={handleShare}
+                                variant="outline"
+                                size="lg"
+                                className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                            >
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Share Album
+                            </Button>
+
+                            {media.filter(item => item.mime_type.startsWith('image/')).length > 0 && (
+                                <Button
+                                    onClick={saveAllPhotosToLibrary}
+                                    disabled={isSavingToLibrary}
+                                    size="lg"
+                                    className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg"
+                                >
+                                    {getSaveButtonIcon()}
+                                    <span className="ml-2">{getSaveButtonText()}</span>
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -312,7 +568,7 @@ export default function PublicAlbumPage() {
                             <Button
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    downloadImage(selectedImage)
+                                    saveImageToDevice(selectedImage, 0, 1)
                                 }}
                                 size="sm"
                                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"

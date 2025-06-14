@@ -4,10 +4,18 @@ import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase-service'
 import { del } from '@vercel/blob'
 
+// Define the route context interface
+interface RouteContext {
+    params: Promise<{
+        albumId: string
+        mediaId: string
+    }>
+}
+
 // DELETE /api/albums/[albumId]/media/[mediaId] - Delete a media file
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { albumId: string; mediaId: string } }
+    { params }: RouteContext
 ) {
     try {
         // Get the authorization header
@@ -32,7 +40,7 @@ export async function DELETE(
             )
         }
 
-        const { albumId, mediaId } = params
+        const { albumId, mediaId } = await params
 
         // Check if user has access to this album (creator or collaborator)
         const { data: album } = await supabaseService

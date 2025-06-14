@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Add ability to delete image">
-      <change afterPath="$PROJECT_DIR$/app/api/share/[shareId]/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" afterDir="false" />
+    <list default="true" id="4abb6cc1-bba8-4b56-94cb-2c4e5f14b074" name="Changes" comment="Create public share page">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/albums/[albumId]/media/[mediaId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/albums/[albumId]/media/[mediaId]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/share/[shareId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eslint.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.mjs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,24 +18,24 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "jackvdp"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;jackvdp&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/jackvdp/vacay.git",
-    "accountId": "6cb89bf6-bafc-45f4-95af-545513498139"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/jackvdp/vacay.git&quot;,
+    &quot;accountId&quot;: &quot;6cb89bf6-bafc-45f4-95af-545513498139&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 1
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
   <component name="ProjectId" id="2y5BxKMjhYQBDbBHmYglei2pUsm" />
   <component name="ProjectViewState">
     <option name="autoscrollFromSource" value="true" />
@@ -43,19 +44,19 @@
     <option name="openDirectoriesWithSingleClick" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/jackvanderpump/Repos/vacay/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/jackvanderpump/Repos/vacay/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -76,7 +77,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749114799012</updated>
-      <workItem from="1749114800260" duration="22005000" />
+      <workItem from="1749114800260" duration="25513000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial home screen and set up">
       <option name="closed" value="true" />
@@ -190,7 +191,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749315267691</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Create public share page">
+      <option name="closed" value="true" />
+      <created>1749315846146</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1749315846146</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -211,6 +220,7 @@
     <MESSAGE value="Add collaborator functionality" />
     <MESSAGE value="Show collaborators in album detail screen" />
     <MESSAGE value="Add ability to delete image" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add ability to delete image" />
+    <MESSAGE value="Create public share page" />
+    <option name="LAST_COMMIT_MESSAGE" value="Create public share page" />
   </component>
 </project>

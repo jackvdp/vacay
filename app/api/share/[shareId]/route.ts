@@ -5,10 +5,11 @@ import { supabaseService } from '@/lib/supabase-service'
 // GET /api/share/[shareId] - Get public album data by share ID
 export async function GET(
     request: NextRequest,
-    { params }: { params: { shareId: string } }
+    { params }: { params: Promise<{ shareId: string }> }
 ) {
     try {
-        const { shareId } = params
+        const paramsReceived = await params
+        const { shareId } = paramsReceived
 
         if (!shareId) {
             return NextResponse.json(

@@ -6,7 +6,7 @@ import { supabaseService } from '@/lib/supabase-service'
 // GET /api/albums/[albumId]/members - Get all members of an album
 export async function GET(
     request: NextRequest,
-    { params }: { params: { albumId: string } }
+    { params }: { params: Promise<{ albumId: string }> }
 ) {
     try {
         // Get the authorization header
@@ -31,7 +31,8 @@ export async function GET(
             )
         }
 
-        const albumId = params.albumId
+        const paramsReceived = await params
+        const albumId = paramsReceived.albumId
 
         // Check if user has access to this album
         const { data: album } = await supabaseService
@@ -101,7 +102,7 @@ export async function GET(
 // POST /api/albums/[albumId]/members - Add an email to the album
 export async function POST(
     request: NextRequest,
-    { params }: { params: { albumId: string } }
+    { params }: { params: Promise<{ albumId: string }> }
 ) {
     try {
         // Get the authorization header
@@ -126,7 +127,8 @@ export async function POST(
             )
         }
 
-        const albumId = params.albumId
+        const paramsReceived = await params
+        const albumId = paramsReceived.albumId
         const { email } = await request.json()
 
         if (!email) {

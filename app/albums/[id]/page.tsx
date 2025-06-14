@@ -372,7 +372,7 @@ export default function AlbumPage() {
                             <div>
                                 <p className="text-sm text-slate-600">Share Link</p>
                                 <p className="text-xs text-slate-500 font-mono">
-                                    vacay.app/share/{album.share_id}
+                                    {getBaseURL()}/share/{album.share_id}
                                 </p>
                             </div>
                         </div>
@@ -483,4 +483,14 @@ export default function AlbumPage() {
             />
         </div>
     )
+}
+
+function getBaseURL() {
+    if (typeof window === 'undefined') {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'localhost:3000';
+        // Remove http:// or https:// if present
+        return baseUrl.replace(/^https?:\/\//, '');
+    }
+    // Remove protocol from window.location.origin
+    return window.location.origin.replace(/^https?:\/\//, '');
 }
