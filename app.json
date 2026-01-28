@@ -38,6 +38,14 @@
           "photosPermission": "Allow Vacay to access your photos to upload to albums",
           "cameraPermission": "Allow Vacay to access your camera to take photos"
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Vacay to save photos to your library",
+          "savePhotosPermission": "Allow Vacay to save photos to your library",
+          "isAccessMediaLocationEnabled": true
+        }
       ]
     ],
     "experiments": {

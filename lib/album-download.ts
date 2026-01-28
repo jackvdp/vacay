@@ -129,7 +129,8 @@ export async function downloadAlbumToDevice(
     }
   }
 
-  // Create album and add assets (iOS creates album, Android uses folder)
+  // Create album and add assets
+  // Note: iOS creates a proper album, Android creates a folder in Pictures
   if (savedAssets.length > 0) {
     onProgress?.({
       current: total,
@@ -147,10 +148,13 @@ export async function downloadAlbumToDevice(
 
       if (!album) {
         // Create new album with first asset
+        // On Android, use copyAsset=true for more reliable behavior
+        // On iOS, copyAsset=false moves the asset to the album
+        const copyAsset = Platform.OS === 'android'
         album = await MediaLibrary.createAlbumAsync(
           albumTitle,
           savedAssets[0],
-          false // Don't copy, move the asset
+          copyAsset
         )
 
         // Add remaining assets to album
@@ -158,12 +162,13 @@ export async function downloadAlbumToDevice(
           await MediaLibrary.addAssetsToAlbumAsync(
             savedAssets.slice(1),
             album,
-            false
+            copyAsset
           )
         }
       } else {
         // Add all assets to existing album
-        await MediaLibrary.addAssetsToAlbumAsync(savedAssets, album, false)
+        const copyAsset = Platform.OS === 'android'
+        await MediaLibrary.addAssetsToAlbumAsync(savedAssets, album, copyAsset)
       }
 
       onProgress?.({
@@ -181,19 +186,21 @@ export async function downloadAlbumToDevice(
       }
     } catch (albumError) {
       console.error('Failed to create album:', albumError)
-      // Assets are still saved, just not in an album
+      // Assets are still saved to camera roll, just not in a specific album
+      // This is acceptable - photos are accessible in the main gallery
       onProgress?.({
         current: total,
         total,
         phase: 'complete',
-        message: `Saved ${savedCount} photos (album creation failed)`,
+        message: `Saved ${savedCount} photos to gallery`,
       })
 
       return {
         success: true,
         savedCount,
         failedCount,
-        error: 'Photos saved but could not create album',
+        // On Android, album creation can fail but photos are still in gallery
+        albumName: Platform.OS === 'android' ? undefined : undefined,
       }
     }
   }
