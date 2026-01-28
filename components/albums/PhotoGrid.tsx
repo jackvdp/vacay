@@ -3,6 +3,7 @@ import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import type { Media } from '@/types/album'
 import { isVideo } from '@/lib/utils'
+import { getGridImageUrl } from '@/lib/media'
 
 interface PhotoGridProps {
   media: Media[]
@@ -33,7 +34,7 @@ export function PhotoGrid({
         style={{ width: itemWidth, height: itemWidth, margin: gap / 2 }}
       >
         <Image
-          source={{ uri: item.blob_url }}
+          source={{ uri: getGridImageUrl(item) }}
           contentFit="cover"
           className="w-full h-full"
         />

@@ -17,8 +17,9 @@ export interface Media {
   original_name: string
   mime_type: string
   size_bytes: number
-  blob_url: string
-  thumbnail_url?: string
+  blob_url: string // Original/raw file for download
+  large_url?: string // Optimized for viewing (~1500px)
+  thumbnail_url?: string // Grid display (~400px)
   width?: number
   height?: number
   duration?: number

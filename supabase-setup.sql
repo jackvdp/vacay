@@ -25,13 +25,17 @@ CREATE TABLE IF NOT EXISTS public.media (
     original_name TEXT NOT NULL,
     mime_type TEXT NOT NULL,
     size_bytes BIGINT NOT NULL,
-    blob_url TEXT NOT NULL,
-    thumbnail_url TEXT,
+    blob_url TEXT NOT NULL,          -- Original/raw file for download
+    large_url TEXT,                   -- Optimized for viewing (~1500px)
+    thumbnail_url TEXT,               -- Grid display (~400px)
     width INTEGER,
     height INTEGER,
     duration INTEGER,
     uploaded_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: Add large_url column if upgrading from older schema
+-- ALTER TABLE public.media ADD COLUMN IF NOT EXISTS large_url TEXT;
 
 -- Album members (collaborators) table
 CREATE TABLE IF NOT EXISTS public.album_members (

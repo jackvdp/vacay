@@ -13,7 +13,7 @@ import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import * as FileSystem from 'expo-file-system'
 import * as MediaLibrary from 'expo-media-library'
-import { getPublicAlbumWithMedia } from '@/lib/media'
+import { getPublicAlbumWithMedia, getGridImageUrl, getDownloadUrl } from '@/lib/media'
 import { isVideo } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import type { Media } from '@/types/album'
@@ -60,9 +60,10 @@ export default function ShareScreen() {
 
     try {
       if (Platform.OS === 'web') {
-        // Web: Trigger download
+        // Web: Trigger download of original file
+        const downloadUrl = getDownloadUrl(item)
         const link = document.createElement('a')
-        link.href = item.blob_url
+        link.href = downloadUrl
         link.download = item.original_name
         link.target = '_blank'
         document.body.appendChild(link)
@@ -76,9 +77,10 @@ export default function ShareScreen() {
           return
         }
 
+        const downloadUrl = getDownloadUrl(item)
         const fileUri = `${FileSystem.documentDirectory}${item.original_name}`
         const downloadResult = await FileSystem.downloadAsync(
-          item.blob_url,
+          downloadUrl,
           fileUri
         )
 
@@ -109,8 +111,9 @@ export default function ShareScreen() {
         const item = media[i]
         setBatchProgress({ current: i + 1, total: media.length })
 
+        const downloadUrl = getDownloadUrl(item)
         const link = document.createElement('a')
-        link.href = item.blob_url
+        link.href = downloadUrl
         link.download = item.original_name
         link.target = '_blank'
         document.body.appendChild(link)
@@ -144,9 +147,10 @@ export default function ShareScreen() {
         setBatchProgress({ current: i + 1, total: media.length })
 
         try {
+          const downloadUrl = getDownloadUrl(item)
           const fileUri = `${FileSystem.documentDirectory}${Date.now()}_${item.original_name}`
           const downloadResult = await FileSystem.downloadAsync(
-            item.blob_url,
+            downloadUrl,
             fileUri
           )
 
@@ -265,7 +269,7 @@ export default function ShareScreen() {
               <View key={item.id} className="w-1/3 aspect-square p-0.5">
                 <Pressable className="relative w-full h-full">
                   <Image
-                    source={{ uri: item.blob_url }}
+                    source={{ uri: getGridImageUrl(item) }}
                     contentFit="cover"
                     className="w-full h-full"
                   />
