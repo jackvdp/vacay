@@ -28,14 +28,18 @@ CREATE TABLE IF NOT EXISTS public.media (
     blob_url TEXT NOT NULL,          -- Original/raw file for download
     large_url TEXT,                   -- Optimized for viewing (~1500px)
     thumbnail_url TEXT,               -- Grid display (~400px)
+    live_video_url TEXT,              -- Live Photo video component (iOS)
+    is_live_photo BOOLEAN DEFAULT false, -- True if this is a Live Photo
     width INTEGER,
     height INTEGER,
     duration INTEGER,
     uploaded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Migration: Add large_url column if upgrading from older schema
+-- Migration: Add columns if upgrading from older schema
 -- ALTER TABLE public.media ADD COLUMN IF NOT EXISTS large_url TEXT;
+-- ALTER TABLE public.media ADD COLUMN IF NOT EXISTS live_video_url TEXT;
+-- ALTER TABLE public.media ADD COLUMN IF NOT EXISTS is_live_photo BOOLEAN DEFAULT false;
 
 -- Album members (collaborators) table
 CREATE TABLE IF NOT EXISTS public.album_members (

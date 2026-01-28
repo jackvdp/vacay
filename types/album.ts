@@ -20,6 +20,8 @@ export interface Media {
   blob_url: string // Original/raw file for download
   large_url?: string // Optimized for viewing (~1500px)
   thumbnail_url?: string // Grid display (~400px)
+  live_video_url?: string // Live Photo video component (iOS)
+  is_live_photo?: boolean // True if this is a Live Photo
   width?: number
   height?: number
   duration?: number

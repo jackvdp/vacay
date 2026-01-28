@@ -3,7 +3,8 @@ import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import type { Media } from '@/types/album'
 import { isVideo } from '@/lib/utils'
-import { getGridImageUrl } from '@/lib/media'
+import { getGridImageUrl, isLivePhoto } from '@/lib/media'
+import { LivePhotoView } from './LivePhotoView'
 
 interface PhotoGridProps {
   media: Media[]
@@ -26,7 +27,35 @@ export function PhotoGrid({
 
   const renderItem = ({ item, index }: { item: Media; index: number }) => {
     const isVideoFile = isVideo(item.mime_type)
+    const isLive = isLivePhoto(item)
 
+    // Use LivePhotoView for Live Photos
+    if (isLive) {
+      return (
+        <View
+          style={{ width: itemWidth, height: itemWidth, margin: gap / 2 }}
+          className="relative"
+        >
+          <LivePhotoView
+            media={item}
+            style={{ width: '100%', height: '100%' }}
+            onPress={() => onMediaPress?.(item, index)}
+          />
+
+          {/* Delete button */}
+          {canDelete && onDeletePress && (
+            <Pressable
+              onPress={() => onDeletePress(item)}
+              className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
+            >
+              <Ionicons name="trash-outline" size={14} color="#fff" />
+            </Pressable>
+          )}
+        </View>
+      )
+    }
+
+    // Regular photo/video
     return (
       <Pressable
         onPress={() => onMediaPress?.(item, index)}

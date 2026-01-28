@@ -28,6 +28,9 @@ interface UploadFile {
   name: string
   type: string
   size?: number
+  // Live Photo support
+  isLivePhoto?: boolean
+  liveVideoUri?: string
 }
 
 export async function uploadMediaToSupabase(
@@ -53,8 +56,10 @@ export async function uploadMediaToSupabase(
     let originalUrl: string
     let largeUrl: string | undefined
     let thumbnailUrl: string | undefined
+    let liveVideoUrl: string | undefined
     let width: number | undefined
     let height: number | undefined
+    const isLivePhoto = file.isLivePhoto || false
 
     // Check if we can process this image
     const canProcess = isProcessableImage(file.type)
@@ -141,6 +146,34 @@ export async function uploadMediaToSupabase(
             .getPublicUrl(thumbFileName)
           thumbnailUrl = thumbUrlData.publicUrl
         }
+
+        // Upload Live Photo video component if present
+        if (isLivePhoto && file.liveVideoUri) {
+          onProgress?.(80)
+          const liveVideoFileName = `${baseFileName}-live.mov`
+
+          try {
+            const videoResponse = await fetch(file.liveVideoUri)
+            const videoBlob = await videoResponse.blob()
+
+            const { error: videoError } = await supabase.storage
+              .from('media')
+              .upload(liveVideoFileName, videoBlob, {
+                contentType: 'video/quicktime',
+                upsert: false,
+              })
+
+            if (!videoError) {
+              const { data: videoUrlData } = supabase.storage
+                .from('media')
+                .getPublicUrl(liveVideoFileName)
+              liveVideoUrl = videoUrlData.publicUrl
+            }
+          } catch (videoErr) {
+            console.warn('Failed to upload Live Photo video:', videoErr)
+            // Continue without the video - still save the image
+          }
+        }
       } else {
         // Processing failed, fall back to just uploading original
         const result = await uploadOriginalOnly(file, baseFileName, fileExt)
@@ -170,6 +203,8 @@ export async function uploadMediaToSupabase(
         blob_url: originalUrl,
         large_url: largeUrl,
         thumbnail_url: thumbnailUrl,
+        live_video_url: liveVideoUrl,
+        is_live_photo: isLivePhoto,
         width,
         height,
       })
@@ -220,6 +255,7 @@ async function cleanupUploadedFiles(baseFileName: string, fileExt: string) {
     `${baseFileName}-original.${fileExt}`,
     `${baseFileName}-large.jpg`,
     `${baseFileName}-thumb.jpg`,
+    `${baseFileName}-live.mov`, // Live Photo video
   ]
 
   try {
@@ -250,6 +286,7 @@ export async function deleteMedia(
       filename, // Original
       `${baseFileName}-large.jpg`,
       `${baseFileName}-thumb.jpg`,
+      `${baseFileName}-live.mov`, // Live Photo video
     ]
 
     // Delete all versions from storage
@@ -335,4 +372,19 @@ export function getViewImageUrl(media: Media): string {
  */
 export function getDownloadUrl(media: Media): string {
   return media.blob_url
+}
+
+/**
+ * Check if a media item is a Live Photo
+ */
+export function isLivePhoto(media: Media): boolean {
+  return media.is_live_photo === true && !!media.live_video_url
+}
+
+/**
+ * Get the Live Photo video URL
+ */
+export function getLiveVideoUrl(media: Media): string | null {
+  if (!isLivePhoto(media)) return null
+  return media.live_video_url || null
 }

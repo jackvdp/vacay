@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { View, Text, Alert, Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
+import * as MediaLibrary from 'expo-media-library'
 import { Ionicons } from '@expo/vector-icons'
 import { Button } from '@/components/ui'
 import { uploadMediaToSupabase } from '@/lib/media'
@@ -9,6 +10,35 @@ import { isValidMimeType } from '@/lib/utils'
 interface PhotoUploadProps {
   albumId: string
   onUploadComplete: () => void
+}
+
+/**
+ * Check if an asset is a Live Photo (iOS only)
+ */
+function checkIfLivePhoto(asset: MediaLibrary.Asset): boolean {
+  if (Platform.OS !== 'ios') return false
+  const subtypes = asset.mediaSubtypes || []
+  return subtypes.includes('livePhoto')
+}
+
+/**
+ * Get the Live Photo video URI using the asset's local URI
+ */
+async function getLivePhotoVideoUri(asset: MediaLibrary.Asset): Promise<string | null> {
+  if (Platform.OS !== 'ios') return null
+
+  try {
+    const assetInfo = await MediaLibrary.getAssetInfoAsync(asset)
+    if (assetInfo.localUri) {
+      // Live Photo videos are typically stored with .MOV extension
+      // alongside the image with same base name
+      const videoUri = assetInfo.localUri.replace(/\.(heic|jpg|jpeg|png)$/i, '.MOV')
+      return videoUri
+    }
+  } catch (error) {
+    console.warn('Error getting Live Photo video URI:', error)
+  }
+  return null
 }
 
 export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
@@ -40,7 +70,7 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'],
         allowsMultipleSelection: true,
-        quality: 0.8,
+        quality: 1, // Full quality to preserve original
         selectionLimit: 20,
       })
 
@@ -65,11 +95,35 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
           continue
         }
 
+        // Check for Live Photo on iOS
+        let isLivePhoto = false
+        let liveVideoUri: string | undefined
+
+        if (Platform.OS === 'ios' && asset.assetId) {
+          try {
+            // Get the full asset from MediaLibrary to check for Live Photo
+            const mediaAsset = await MediaLibrary.getAssetInfoAsync(asset.assetId)
+            if (mediaAsset) {
+              isLivePhoto = checkIfLivePhoto(mediaAsset as MediaLibrary.Asset)
+              if (isLivePhoto) {
+                const videoUri = await getLivePhotoVideoUri(mediaAsset as MediaLibrary.Asset)
+                if (videoUri) {
+                  liveVideoUri = videoUri
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Could not check Live Photo status:', err)
+          }
+        }
+
         const { error } = await uploadMediaToSupabase(albumId, {
           uri: asset.uri,
           name: fileName,
           type: mimeType,
           size: asset.fileSize,
+          isLivePhoto,
+          liveVideoUri,
         })
 
         if (error) {
@@ -115,7 +169,7 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images', 'videos'],
-        quality: 0.8,
+        quality: 1,
       })
 
       if (result.canceled || !result.assets[0]) return
@@ -127,11 +181,13 @@ export function PhotoUpload({ albumId, onUploadComplete }: PhotoUploadProps) {
       const fileName = asset.fileName || `photo_${Date.now()}.jpg`
       const mimeType = asset.mimeType || 'image/jpeg'
 
+      // Camera photos are not Live Photos
       const { error } = await uploadMediaToSupabase(albumId, {
         uri: asset.uri,
         name: fileName,
         type: mimeType,
         size: asset.fileSize,
+        isLivePhoto: false,
       })
 
       if (error) {
