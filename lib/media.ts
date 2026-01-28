@@ -1,125 +1,174 @@
-// lib/media.ts
-
 import { supabase } from './supabase'
 import type { Media } from '@/types/album'
 
-export interface UploadProgress {
-    fileName: string
-    progress: number
-    status: 'uploading' | 'processing' | 'complete' | 'error'
-    error?: string
+export async function getAlbumMedia(
+  albumId: string
+): Promise<{ media: Media[] | null; error: Error | null }> {
+  try {
+    const { data: media, error } = await supabase
+      .from('media')
+      .select('*')
+      .eq('album_id', albumId)
+      .order('uploaded_at', { ascending: false })
+
+    if (error) {
+      return { media: null, error: new Error(error.message) }
+    }
+
+    return { media, error: null }
+  } catch (error) {
+    return { media: null, error: error as Error }
+  }
 }
 
-export async function getAlbumMedia(albumId: string): Promise<{ media: Media[] | null; error: any }> {
-    try {
-        const { data: media, error } = await supabase
-            .from('media')
-            .select('*')
-            .eq('album_id', albumId)
-            .order('uploaded_at', { ascending: false })
+export async function uploadMediaToSupabase(
+  albumId: string,
+  file: {
+    uri: string
+    name: string
+    type: string
+    size?: number
+  },
+  onProgress?: (progress: number) => void
+): Promise<{ media: Media | null; error: Error | null }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-        return { media, error }
-    } catch (error) {
-        return { media: null, error }
+    if (!user) {
+      return { media: null, error: new Error('User not authenticated') }
     }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${albumId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+    // Fetch the file as blob
+    const response = await fetch(file.uri)
+    const blob = await response.blob()
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('media')
+      .upload(fileName, blob, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      return { media: null, error: new Error(uploadError.message) }
+    }
+
+    onProgress?.(50)
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('media')
+      .getPublicUrl(fileName)
+
+    // Save metadata to database
+    const { data: media, error: metadataError } = await supabase
+      .from('media')
+      .insert({
+        album_id: albumId,
+        uploader_id: user.id,
+        filename: fileName,
+        original_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size || blob.size,
+        blob_url: urlData.publicUrl,
+      })
+      .select()
+      .single()
+
+    if (metadataError) {
+      // Try to clean up uploaded file
+      await supabase.storage.from('media').remove([fileName])
+      return { media: null, error: new Error(metadataError.message) }
+    }
+
+    onProgress?.(100)
+
+    return { media, error: null }
+  } catch (error) {
+    return { media: null, error: error as Error }
+  }
 }
 
-// Helper function to validate file types - improved version
-export function isValidFileType(file: File): boolean {
-    const fileName = file.name.toLowerCase()
-    const mimeType = file.type
+export async function deleteMedia(
+  mediaId: string,
+  filename: string
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    // Define valid combinations of MIME types and extensions
-    const validTypes = [
-        // Images
-        { mime: 'image/jpeg', extensions: ['.jpg', '.jpeg'] },
-        { mime: 'image/png', extensions: ['.png'] },
-        { mime: 'image/webp', extensions: ['.webp'] },
-        { mime: 'image/gif', extensions: ['.gif'] },
-        // Videos
-        { mime: 'video/mp4', extensions: ['.mp4'] },
-        { mime: 'video/mov', extensions: ['.mov'] },
-        { mime: 'video/quicktime', extensions: ['.mov'] },
-        { mime: 'video/avi', extensions: ['.avi'] }
-    ]
-
-    // Check if MIME type is directly valid
-    if (validTypes.some(type => type.mime === mimeType)) {
-        console.log('File type valid by MIME type:', mimeType)
-        return true
+    if (!user) {
+      return { success: false, error: new Error('User not authenticated') }
     }
 
-    // If MIME type is generic or unknown, check by file extension
-    if (mimeType === 'application/octet-stream' || mimeType === '' || !mimeType) {
-        const isValidByExtension = validTypes.some(type =>
-            type.extensions.some(ext => fileName.endsWith(ext))
-        )
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from('media')
+      .remove([filename])
 
-        if (isValidByExtension) {
-            console.log('File type valid by extension:', fileName, '(MIME type was:', mimeType, ')')
-            return true
-        }
+    if (storageError) {
+      console.warn('Error deleting from storage:', storageError)
+      // Continue anyway to delete metadata
     }
 
-    // Check if file has valid extension even if MIME type is different
-    const hasValidExtension = validTypes.some(type =>
-        type.extensions.some(ext => fileName.endsWith(ext))
-    )
+    // Delete metadata
+    const { error: dbError } = await supabase
+      .from('media')
+      .delete()
+      .eq('id', mediaId)
 
-    if (hasValidExtension) {
-        console.log('File type valid by extension despite different MIME type:', fileName, mimeType)
-        return true
+    if (dbError) {
+      return { success: false, error: new Error(dbError.message) }
     }
 
-    console.log('Invalid file type:', fileName, mimeType)
-    return false
+    return { success: true, error: null }
+  } catch (error) {
+    return { success: false, error: error as Error }
+  }
 }
 
-// Helper function to get correct MIME type based on file extension
-export function getCorrectMimeType(file: File): string {
-    const fileName = file.name.toLowerCase()
-    const originalMimeType = file.type
+export async function getPublicAlbumWithMedia(shareId: string): Promise<{
+  album: { id: string; title: string; description?: string } | null
+  media: Media[] | null
+  error: Error | null
+}> {
+  try {
+    // Get album by share_id
+    const { data: album, error: albumError } = await supabase
+      .from('albums')
+      .select('id, title, description, is_public')
+      .eq('share_id', shareId)
+      .single()
 
-    const typeMap: Record<string, string> = {
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.webp': 'image/webp',
-        '.gif': 'image/gif',
-        '.mp4': 'video/mp4',
-        '.mov': 'video/mov',
-        '.avi': 'video/avi'
+    if (albumError) {
+      return { album: null, media: null, error: new Error(albumError.message) }
     }
 
-    // If original MIME type is valid and not generic, use it
-    if (originalMimeType &&
-        originalMimeType !== 'application/octet-stream' &&
-        originalMimeType !== '') {
-        return originalMimeType
+    if (!album.is_public) {
+      return { album: null, media: null, error: new Error('Album is not public') }
     }
 
-    // Otherwise, determine from extension
-    for (const [ext, mime] of Object.entries(typeMap)) {
-        if (fileName.endsWith(ext)) {
-            console.log(`Corrected MIME type for ${fileName} from ${originalMimeType} to ${mime}`)
-            return mime
-        }
+    // Get media for album
+    const { data: media, error: mediaError } = await supabase
+      .from('media')
+      .select('*')
+      .eq('album_id', album.id)
+      .order('uploaded_at', { ascending: false })
+
+    if (mediaError) {
+      return { album, media: null, error: new Error(mediaError.message) }
     }
 
-    return originalMimeType || 'application/octet-stream'
-}
-
-// Helper function to format file size
-export function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-// Legacy upload function (kept for backwards compatibility, but now unused)
-export async function uploadMedia(data: { albumId: string; file: File }): Promise<{ media: Media | null; error: any }> {
-    console.warn('uploadMedia function is deprecated. Use direct client upload instead.')
-    return { media: null, error: 'This upload method is no longer supported. Please use the updated upload component.' }
+    return { album, media, error: null }
+  } catch (error) {
+    return { album: null, media: null, error: error as Error }
+  }
 }
