@@ -1,4 +1,5 @@
 export { AlbumCard } from './AlbumCard'
 export { CreateAlbumModal } from './CreateAlbumModal'
+export { MemberManagementModal } from './MemberManagementModal'
 export { PhotoGrid } from './PhotoGrid'
 export { PhotoUpload } from './PhotoUpload'

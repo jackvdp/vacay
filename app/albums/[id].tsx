@@ -15,7 +15,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useAuth } from '@/lib/auth-context'
 import { getAlbumById, updateAlbum, deleteAlbum } from '@/lib/albums'
 import { getAlbumMedia, deleteMedia } from '@/lib/media'
-import { PhotoGrid, PhotoUpload } from '@/components/albums'
+import { PhotoGrid, PhotoUpload, MemberManagementModal } from '@/components/albums'
 import { Button, Modal, Input, Switch } from '@/components/ui'
 import type { Album, Media } from '@/types/album'
 
@@ -29,6 +29,7 @@ export default function AlbumDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showMembersModal, setShowMembersModal] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editIsPublic, setEditIsPublic] = useState(false)
@@ -244,6 +245,12 @@ export default function AlbumDetailScreen() {
             {/* Actions */}
             <View className="flex-row gap-2">
               <Pressable
+                onPress={() => setShowMembersModal(true)}
+                className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center active:bg-primary-200"
+              >
+                <Ionicons name="people-outline" size={20} color="#0d9488" />
+              </Pressable>
+              <Pressable
                 onPress={handleShare}
                 className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center active:bg-primary-200"
               >
@@ -315,6 +322,14 @@ export default function AlbumDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Members Modal */}
+      <MemberManagementModal
+        visible={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        albumId={album.id}
+        isCreator={isCreator}
+      />
     </View>
   )
 }
