@@ -15,6 +15,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useAuth } from '@/lib/auth-context'
 import { getAlbumById, updateAlbum, deleteAlbum } from '@/lib/albums'
 import { getAlbumMedia, deleteMedia } from '@/lib/media'
+import { downloadAlbum, DownloadProgress } from '@/lib/album-download'
 import { PhotoGrid, PhotoUpload, MemberManagementModal } from '@/components/albums'
 import { Button, Modal, Input, Switch } from '@/components/ui'
 import type { Album, Media } from '@/types/album'
@@ -34,6 +35,8 @@ export default function AlbumDetailScreen() {
   const [editDescription, setEditDescription] = useState('')
   const [editIsPublic, setEditIsPublic] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
 
   const isCreator = album?.creator_id === user?.id
 
@@ -189,6 +192,40 @@ export default function AlbumDetailScreen() {
     ])
   }
 
+  const handleDownloadAlbum = async () => {
+    if (!album || media.length === 0) return
+
+    setDownloading(true)
+    setDownloadProgress(null)
+
+    try {
+      const result = await downloadAlbum(album.title, media, (progress) => {
+        setDownloadProgress(progress)
+      })
+
+      if (result.success) {
+        if (Platform.OS === 'web') {
+          Alert.alert('Complete', `Downloaded ${result.savedCount} files`)
+        } else if (result.albumName) {
+          Alert.alert(
+            'Saved to Photos',
+            `${result.savedCount} photos saved to "${result.albumName}" album`
+          )
+        } else {
+          Alert.alert('Saved to Photos', `${result.savedCount} photos saved`)
+        }
+      } else if (result.error) {
+        Alert.alert('Error', result.error)
+      }
+    } catch (err) {
+      console.error('Download album error:', err)
+      Alert.alert('Error', 'Failed to download album')
+    } finally {
+      setDownloading(false)
+      setDownloadProgress(null)
+    }
+  }
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50">
@@ -244,6 +281,19 @@ export default function AlbumDetailScreen() {
 
             {/* Actions */}
             <View className="flex-row gap-2">
+              {media.length > 0 && (
+                <Pressable
+                  onPress={handleDownloadAlbum}
+                  disabled={downloading}
+                  className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center active:bg-primary-200 disabled:opacity-50"
+                >
+                  <Ionicons
+                    name={Platform.OS === 'web' ? 'download-outline' : 'albums-outline'}
+                    size={20}
+                    color="#0d9488"
+                  />
+                </Pressable>
+              )}
               <Pressable
                 onPress={() => setShowMembersModal(true)}
                 className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center active:bg-primary-200"
@@ -267,6 +317,26 @@ export default function AlbumDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* Download Progress */}
+        {downloading && downloadProgress && (
+          <View className="mx-4 mt-2 p-3 bg-primary-50 rounded-xl flex-row items-center">
+            <Ionicons
+              name={
+                downloadProgress.phase === 'downloading'
+                  ? 'cloud-download'
+                  : downloadProgress.phase === 'saving'
+                    ? 'albums'
+                    : 'checkmark-circle'
+              }
+              size={20}
+              color="#0d9488"
+            />
+            <Text className="text-primary-700 ml-2 font-medium flex-1">
+              {downloadProgress.message}
+            </Text>
+          </View>
+        )}
 
         {/* Upload Section */}
         <View className="px-4 py-3">

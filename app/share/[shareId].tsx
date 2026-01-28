@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as FileSystem from 'expo-file-system'
 import * as MediaLibrary from 'expo-media-library'
 import { getPublicAlbumWithMedia, getGridImageUrl, getDownloadUrl } from '@/lib/media'
+import { downloadAlbum, DownloadProgress } from '@/lib/album-download'
 import { isVideo } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import type { Media } from '@/types/album'
@@ -28,7 +29,7 @@ export default function ShareScreen() {
   const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<string | null>(null)
   const [batchDownloading, setBatchDownloading] = useState(false)
-  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 })
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
 
   const loadAlbum = async () => {
     if (!shareId) return
@@ -100,84 +101,36 @@ export default function ShareScreen() {
   }
 
   const handleDownloadAll = async () => {
-    if (media.length === 0) return
+    if (media.length === 0 || !album) return
 
-    if (Platform.OS === 'web') {
-      // Web: Download files with delay between each
-      setBatchDownloading(true)
-      setBatchProgress({ current: 0, total: media.length })
+    setBatchDownloading(true)
+    setDownloadProgress(null)
 
-      for (let i = 0; i < media.length; i++) {
-        const item = media[i]
-        setBatchProgress({ current: i + 1, total: media.length })
+    try {
+      const result = await downloadAlbum(album.title, media, (progress) => {
+        setDownloadProgress(progress)
+      })
 
-        const downloadUrl = getDownloadUrl(item)
-        const link = document.createElement('a')
-        link.href = downloadUrl
-        link.download = item.original_name
-        link.target = '_blank'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-
-        // Add delay between downloads to prevent browser blocking
-        if (i < media.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
-      }
-
-      setBatchDownloading(false)
-      Alert.alert('Complete', `Downloaded ${media.length} files`)
-    } else {
-      // Mobile: Request permission first
-      const { status } = await MediaLibrary.requestPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow access to save photos to your library')
-        return
-      }
-
-      setBatchDownloading(true)
-      setBatchProgress({ current: 0, total: media.length })
-
-      let successCount = 0
-      let errorCount = 0
-
-      for (let i = 0; i < media.length; i++) {
-        const item = media[i]
-        setBatchProgress({ current: i + 1, total: media.length })
-
-        try {
-          const downloadUrl = getDownloadUrl(item)
-          const fileUri = `${FileSystem.documentDirectory}${Date.now()}_${item.original_name}`
-          const downloadResult = await FileSystem.downloadAsync(
-            downloadUrl,
-            fileUri
+      if (result.success) {
+        if (Platform.OS === 'web') {
+          Alert.alert('Complete', `Downloaded ${result.savedCount} files`)
+        } else if (result.albumName) {
+          Alert.alert(
+            'Saved to Photos',
+            `${result.savedCount} photos saved to "${result.albumName}" album`
           )
-
-          await MediaLibrary.saveToLibraryAsync(downloadResult.uri)
-
-          // Clean up temp file
-          await FileSystem.deleteAsync(downloadResult.uri, { idempotent: true })
-
-          successCount++
-        } catch (err) {
-          console.error('Download error for', item.original_name, err)
-          errorCount++
+        } else {
+          Alert.alert('Saved to Photos', `${result.savedCount} photos saved`)
         }
-
-        // Small delay between saves
-        if (i < media.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200))
-        }
+      } else if (result.error) {
+        Alert.alert('Error', result.error)
       }
-
+    } catch (err) {
+      console.error('Download all error:', err)
+      Alert.alert('Error', 'Failed to download album')
+    } finally {
       setBatchDownloading(false)
-
-      if (errorCount > 0) {
-        Alert.alert('Complete', `Saved ${successCount} of ${media.length} photos. ${errorCount} failed.`)
-      } else {
-        Alert.alert('Complete', `All ${successCount} photos saved to your library!`)
-      }
+      setDownloadProgress(null)
     }
   }
 
@@ -239,22 +192,40 @@ export default function ShareScreen() {
                 size="sm"
                 onPress={handleDownloadAll}
                 disabled={batchDownloading}
-                icon={<Ionicons name="download" size={16} color="#fff" />}
+                icon={
+                  <Ionicons
+                    name={Platform.OS === 'web' ? 'download' : 'albums'}
+                    size={16}
+                    color="#fff"
+                  />
+                }
               >
-                {batchDownloading
-                  ? `${batchProgress.current}/${batchProgress.total}`
-                  : 'Download All'}
+                {batchDownloading && downloadProgress
+                  ? `${downloadProgress.current}/${downloadProgress.total}`
+                  : Platform.OS === 'web'
+                    ? 'Download All'
+                    : 'Save to Photos'}
               </Button>
             )}
           </View>
         </View>
 
         {/* Batch download progress */}
-        {batchDownloading && (
+        {batchDownloading && downloadProgress && (
           <View className="mx-4 mt-3 p-3 bg-primary-50 rounded-xl flex-row items-center">
-            <Ionicons name="cloud-download" size={20} color="#0d9488" />
-            <Text className="text-primary-700 ml-2 font-medium">
-              Downloading {batchProgress.current} of {batchProgress.total}...
+            <Ionicons
+              name={
+                downloadProgress.phase === 'downloading'
+                  ? 'cloud-download'
+                  : downloadProgress.phase === 'saving'
+                    ? 'albums'
+                    : 'checkmark-circle'
+              }
+              size={20}
+              color="#0d9488"
+            />
+            <Text className="text-primary-700 ml-2 font-medium flex-1">
+              {downloadProgress.message}
             </Text>
           </View>
         )}
